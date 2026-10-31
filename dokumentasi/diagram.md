@@ -123,3 +123,4 @@ class node_youtube,node_gdrive,node_ai,node_openrouter,node_key_rotation,node_te
 class node_download,node_video_engine,node_render_service,node_system_service,node_video_store,node_finished_videos toneRose
 class node_user,node_youtube_external,node_drive_external,node_gemini_external toneIndigo
 ```
+

@@ -85,6 +85,7 @@ hidden_imports = [
     'backend.services.ai_service',
     'backend.services.download_service',
     'backend.services.gdrive_service',
+    'backend.services.key_rotator',
     'backend.services.openrouter_service',
     'backend.services.render_service',
     'backend.services.system_service',
