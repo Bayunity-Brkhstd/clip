@@ -1682,7 +1682,7 @@ export const ClipStudioSection: React.FC<ClipStudioSectionProps> = ({
           <div>
             <div className="studio-title-badge-row">
               <h2 className="studio-main-heading" style={{ fontSize: '1.4rem', fontFamily: 'var(--font-mono)', fontWeight: 800 }}>
-                <span style={{ color: '#ff00ff' }}>&gt;_</span> {t.studio.heading}
+                <span style={{ color: '#00f0ff' }}>&gt;_</span> {t.studio.heading}
               </h2>
             </div>
             <p className="studio-subtext">
@@ -1702,10 +1702,10 @@ export const ClipStudioSection: React.FC<ClipStudioSectionProps> = ({
                 fontSize: '0.78rem',
                 fontWeight: 700,
                 fontFamily: 'var(--font-mono)',
-                background: 'rgba(255, 0, 255, 0.12)',
-                border: '1px solid #ff00ff',
-                color: '#ff00ff',
-                boxShadow: '0 0 10px rgba(255, 0, 255, 0.25)',
+                background: 'rgba(0, 240, 255, 0.12)',
+                border: '1px solid #00f0ff',
+                color: '#00f0ff',
+                boxShadow: '0 0 10px rgba(0, 240, 255, 0.25)',
                 cursor: 'pointer',
                 borderRadius: 0,
                 display: 'inline-flex',
@@ -4536,10 +4536,10 @@ export const ClipStudioSection: React.FC<ClipStudioSectionProps> = ({
                     style={{
                       width: '30px',
                       height: '30px',
-                      background: isMuted ? 'rgba(255, 0, 255, 0.15)' : '#060608',
-                      border: isMuted ? '1px solid #ff00ff' : '1px solid #201e2c',
-                      color: isMuted ? '#ff00ff' : '#ffffff',
-                      boxShadow: isMuted ? '0 0 8px rgba(255, 0, 255, 0.35)' : 'none',
+                      background: isMuted ? 'rgba(0, 240, 255, 0.15)' : '#060608',
+                      border: isMuted ? '1px solid #00f0ff' : '1px solid #201e2c',
+                      color: isMuted ? '#00f0ff' : '#ffffff',
+                      boxShadow: isMuted ? '0 0 8px rgba(0, 240, 255, 0.35)' : 'none',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
@@ -4577,10 +4577,10 @@ export const ClipStudioSection: React.FC<ClipStudioSectionProps> = ({
                     style={{
                       width: '30px',
                       height: '30px',
-                      background: isLooping ? 'rgba(255, 0, 255, 0.2)' : '#060608',
-                      border: isLooping ? '1px solid #ff00ff' : '1px solid #201e2c',
-                      color: isLooping ? '#ff00ff' : 'var(--text-muted)',
-                      boxShadow: isLooping ? '0 0 8px rgba(255, 0, 255, 0.45)' : 'none',
+                      background: isLooping ? 'rgba(0, 240, 255, 0.2)' : '#060608',
+                      border: isLooping ? '1px solid #00f0ff' : '1px solid #201e2c',
+                      color: isLooping ? '#00f0ff' : 'var(--text-muted)',
+                      boxShadow: isLooping ? '0 0 8px rgba(0, 240, 255, 0.45)' : 'none',
                       cursor: 'pointer',
                       display: 'flex',
                       alignItems: 'center',

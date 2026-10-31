@@ -15,7 +15,7 @@
   line-height: 1;
   letter-spacing: -0.02em;
   user-select: none;
-  text-shadow: 0 0 10px rgba(255, 0, 255, 0.45);
+  text-shadow: 0 0 10px rgba(0, 240, 255, 0.45);
   margin-right: 0.1rem;
 }
 
@@ -37,7 +37,7 @@
 }
 
 .pro-badge {
-  background: rgba(255, 0, 255, 0.1);
+  background: rgba(0, 240, 255, 0.1);
   border: 1px solid var(--primary);
   color: var(--primary);
   font-family: var(--font-mono);
@@ -116,15 +116,15 @@
 
 /* Support / donate button */
 .header-nav-btn.support-btn {
-  background: rgba(255, 0, 255, 0.08);
+  background: rgba(0, 240, 255, 0.08);
   border: 1px solid var(--primary);
   color: var(--primary);
   text-decoration: none;
 }
 
 .header-nav-btn.support-btn:hover {
-  background: rgba(255, 0, 255, 0.18);
-  box-shadow: 0 0 12px rgba(255, 0, 255, 0.3);
+  background: rgba(0, 240, 255, 0.18);
+  box-shadow: 0 0 12px rgba(0, 240, 255, 0.3);
 }
 
 /* Cookie status indicator */

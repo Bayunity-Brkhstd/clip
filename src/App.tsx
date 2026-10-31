@@ -33,7 +33,6 @@ import {
   ExternalLink,
   X,
   Trash2,
-  Heart,
   RefreshCw,
   Layers,
   ArrowLeft,
@@ -78,6 +77,23 @@ export default function App() {
     return '30s';
   });
   const [apiKey, setApiKey] = useState(() => localStorage.getItem('cheat_clip_gemini_api_key') || '');
+  const [showMultiKeyModal, setShowMultiKeyModal] = useState(false);
+  const [multiKeyInputText, setMultiKeyInputText] = useState('');
+
+  const parsedGeminiKeys = useMemo(() => {
+    if (!apiKey) return [];
+    const items = apiKey.trim().split(/[,;\n\r\t]+/);
+    const seen = new Set<string>();
+    const res: string[] = [];
+    for (const item of items) {
+      const k = item.trim().replace(/^['"\[]+|['"\]]+$/g, '');
+      if (k && !seen.has(k) && res.length < 10) {
+        seen.add(k);
+        res.push(k);
+      }
+    }
+    return res;
+  }, [apiKey]);
   const [apiProvider, setApiProvider] = useState<'gemini' | 'openrouter'>(() => {
     const saved = localStorage.getItem('cheat_clip_api_provider');
     return (saved === 'openrouter' || saved === 'gemini') ? saved : 'gemini';
@@ -2818,15 +2834,7 @@ Transcript:
                 </button>
               )}
               <LanguageSwitcher />
-              <a
-                href="https://tako.id/johansa"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="header-nav-btn support-btn"
-                style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}
-              >
-                <Heart size={13} /> {t.header.supportProject}
-              </a>
+
             </div>
           </header>
         </div>
@@ -3203,8 +3211,8 @@ Transcript:
                       flex: 1,
                       height: '48px',
                       background: '#060608',
-                      border: '1px solid rgba(255, 0, 255, 0.35)',
-                      boxShadow: '0 0 8px rgba(255, 0, 255, 0.15)',
+                      border: '1px solid rgba(0, 240, 255, 0.35)',
+                      boxShadow: '0 0 8px rgba(0, 240, 255, 0.15)',
                       transition: 'border-color 0.15s ease, box-shadow 0.15s ease',
                     }}
                     className="hacker-api-key-container"
@@ -3214,9 +3222,9 @@ Transcript:
                         display: 'flex',
                         alignItems: 'center',
                         padding: '0 0.85rem',
-                        background: 'rgba(255, 0, 255, 0.08)',
-                        borderRight: '1px solid rgba(255, 0, 255, 0.25)',
-                        color: '#ff00ff',
+                        background: 'rgba(0, 240, 255, 0.08)',
+                        borderRight: '1px solid rgba(0, 240, 255, 0.25)',
+                        color: '#00f0ff',
                         fontFamily: "'JetBrains Mono', 'Fira Code', monospace",
                         fontSize: '0.78rem',
                         fontWeight: 700,
@@ -3248,7 +3256,7 @@ Transcript:
                         fontSize: '0.88rem',
                         fontWeight: 400,
                         color: '#ffffff',
-                        caretColor: '#ff00ff',
+                        caretColor: '#00f0ff',
                       }}
                     />
                     {url && !loading && (
@@ -3324,8 +3332,8 @@ Transcript:
                       flex: 1,
                       height: '48px',
                       background: '#060608',
-                      border: '1px solid rgba(255, 0, 255, 0.35)',
-                      boxShadow: '0 0 8px rgba(255, 0, 255, 0.15)',
+                      border: '1px solid rgba(0, 240, 255, 0.35)',
+                      boxShadow: '0 0 8px rgba(0, 240, 255, 0.15)',
                       transition: 'border-color 0.15s ease, box-shadow 0.15s ease',
                     }}
                     className="hacker-api-key-container"
@@ -3335,9 +3343,9 @@ Transcript:
                         display: 'flex',
                         alignItems: 'center',
                         padding: '0 0.85rem',
-                        background: 'rgba(255, 0, 255, 0.08)',
-                        borderRight: '1px solid rgba(255, 0, 255, 0.25)',
-                        color: '#ff00ff',
+                        background: 'rgba(0, 240, 255, 0.08)',
+                        borderRight: '1px solid rgba(0, 240, 255, 0.25)',
+                        color: '#00f0ff',
                         fontFamily: "'JetBrains Mono', 'Fira Code', monospace",
                         fontSize: '0.78rem',
                         fontWeight: 700,
@@ -3369,7 +3377,7 @@ Transcript:
                         fontSize: '0.88rem',
                         fontWeight: 400,
                         color: '#ffffff',
-                        caretColor: '#ff00ff',
+                        caretColor: '#00f0ff',
                       }}
                     />
                     {gdriveUrl && !loading && (
@@ -3656,7 +3664,7 @@ Transcript:
                 </div>
 
                 {/* Provider Selection Tabs */}
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', background: '#0a0a0f', padding: '3px', border: '1px solid rgba(255, 0, 255, 0.2)' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', background: '#0a0a0f', padding: '3px', border: '1px solid rgba(0, 240, 255, 0.2)' }}>
                   <button
                     type="button"
                     onClick={() => {
@@ -3666,7 +3674,7 @@ Transcript:
                     }}
                     style={{
                       padding: '0.55rem 0.75rem',
-                      background: apiProvider === 'gemini' ? '#ff00ff' : 'transparent',
+                      background: apiProvider === 'gemini' ? '#00f0ff' : 'transparent',
                       color: apiProvider === 'gemini' ? '#000000' : 'rgba(255, 255, 255, 0.7)',
                       border: 'none',
                       fontWeight: 700,
@@ -3675,7 +3683,7 @@ Transcript:
                       cursor: 'pointer',
                       letterSpacing: '0.04em',
                       transition: 'all 0.15s ease',
-                      boxShadow: apiProvider === 'gemini' ? '0 0 10px rgba(255, 0, 255, 0.4)' : 'none',
+                      boxShadow: apiProvider === 'gemini' ? '0 0 10px rgba(0, 240, 255, 0.4)' : 'none',
                     }}
                   >
                     {t.form.providerGemini}
@@ -3689,7 +3697,7 @@ Transcript:
                     }}
                     style={{
                       padding: '0.55rem 0.75rem',
-                      background: apiProvider === 'openrouter' ? '#ff00ff' : 'transparent',
+                      background: apiProvider === 'openrouter' ? '#00f0ff' : 'transparent',
                       color: apiProvider === 'openrouter' ? '#000000' : 'rgba(255, 255, 255, 0.7)',
                       border: 'none',
                       fontWeight: 700,
@@ -3698,7 +3706,7 @@ Transcript:
                       cursor: 'pointer',
                       letterSpacing: '0.04em',
                       transition: 'all 0.15s ease',
-                      boxShadow: apiProvider === 'openrouter' ? '0 0 10px rgba(255, 0, 255, 0.4)' : 'none',
+                      boxShadow: apiProvider === 'openrouter' ? '0 0 10px rgba(0, 240, 255, 0.4)' : 'none',
                     }}
                   >
                     {t.form.providerOpenRouter}
@@ -3742,11 +3750,50 @@ Transcript:
                         maskLabel={t.form.maskKey}
                       />
                       {!apiKey.trim() && (
-                        <span style={{ fontSize: '0.75rem', color: '#ff1e27', display: 'flex', alignItems: 'center', gap: '0.3rem', fontWeight: 600 }}>
+                        <span style={{ fontSize: '0.75rem', color: '#ff1e27', display: 'flex', alignItems: 'center', gap: '0.3rem', fontWeight: 600, marginTop: '0.3rem' }}>
                           <AlertTriangle size={13} color="#ff1e27" />
                           {t.form.apiKeyErrorHint}
                         </span>
                       )}
+                      {/* Gemini Rolling API Status & Multi-Key Manager CTA */}
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '0.45rem', fontSize: '0.75rem', flexWrap: 'wrap', gap: '0.4rem' }}>
+                        {parsedGeminiKeys.length > 1 ? (
+                          <span style={{ color: 'var(--primary)', display: 'inline-flex', alignItems: 'center', gap: '0.35rem', fontWeight: 700, fontFamily: 'var(--font-mono)', fontSize: '0.75rem' }}>
+                            <CheckCircle2 size={13} color="var(--primary)" /> Rolling Aktif: {parsedGeminiKeys.length}/10 Key Gemini dimuat
+                          </span>
+                        ) : parsedGeminiKeys.length === 1 ? (
+                          <span style={{ color: 'var(--text-secondary)', display: 'inline-flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.75rem', fontFamily: 'var(--font-mono)' }}>
+                            1/10 Key dimuat • Pisahkan koma untuk rolling
+                          </span>
+                        ) : (
+                          <span style={{ color: 'var(--text-muted)', fontSize: '0.72rem', fontFamily: 'var(--font-mono)' }}>
+                            Mendukung hingga 10 API Key (Auto-Rolling)
+                          </span>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setMultiKeyInputText(apiKey ? apiKey.split(/[,;\t]+/).map(k => k.trim()).join('\n') : '');
+                            setShowMultiKeyModal(true);
+                          }}
+                          style={{
+                            background: parsedGeminiKeys.length > 1 ? 'rgba(0, 240, 255, 0.12)' : 'rgba(255, 255, 255, 0.04)',
+                            border: '1px solid var(--primary)',
+                            color: 'var(--primary)',
+                            padding: '0.2rem 0.65rem',
+                            cursor: 'pointer',
+                            fontFamily: 'var(--font-mono)',
+                            fontSize: '0.72rem',
+                            fontWeight: 700,
+                            letterSpacing: '0.03em',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '0.3rem'
+                          }}
+                        >
+                          <Layers size={11} /> {parsedGeminiKeys.length > 1 ? `KELOLA (${parsedGeminiKeys.length}/10 KEY)` : '+ ROLLING API (MAX 10)'}
+                        </button>
+                      </div>
                     </div>
 
                     {/* Gemini AI Model Selection */}
@@ -4432,7 +4479,7 @@ Transcript:
               <section
                 className="history-highlight-panel"
                 aria-label="Previously analyzed clips"
-                style={{ marginTop: 0, marginBottom: 0, borderRadius: 0, border: '1px solid #201e2c', borderLeft: '3px solid #ff00ff', background: '#0a0a0f' }}
+                style={{ marginTop: 0, marginBottom: 0, borderRadius: 0, border: '1px solid #201e2c', borderLeft: '3px solid #00f0ff', background: '#0a0a0f' }}
               >
                 {/* Header Row */}
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
@@ -4440,21 +4487,21 @@ Transcript:
                     style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', cursor: 'pointer', userSelect: 'none' }}
                     onClick={() => setShowHistory(h => !h)}
                   >
-                    <span style={{ fontSize: '1.4rem', color: '#ff00ff', textShadow: '0 0 10px rgba(255, 0, 255, 0.7)', fontFamily: 'var(--font-mono)', fontWeight: 800 }}>&gt;_</span>
+                    <span style={{ fontSize: '1.4rem', color: '#00f0ff', textShadow: '0 0 10px rgba(0, 240, 255, 0.7)', fontFamily: 'var(--font-mono)', fontWeight: 800 }}>&gt;_</span>
                     <div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                         <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: 600, color: 'var(--text-primary)' }}>
                           {t.form.previouslyAnalyzed}
                         </h3>
                         <span style={{
-                          background: 'rgba(255, 0, 255, 0.15)',
-                          color: '#ff00ff',
+                          background: 'rgba(0, 240, 255, 0.15)',
+                          color: '#00f0ff',
                           fontSize: '0.75rem',
                           fontWeight: 700,
                           padding: '0.15rem 0.65rem',
                           borderRadius: 0,
-                          border: '1px solid #ff00ff',
-                          boxShadow: '0 0 8px rgba(255, 0, 255, 0.35)'
+                          border: '1px solid #00f0ff',
+                          boxShadow: '0 0 8px rgba(0, 240, 255, 0.35)'
                         }}>
                           {history.length}
                         </span>
@@ -4618,7 +4665,7 @@ Transcript:
                         <button
                           type="button"
                           onClick={() => setHistorySearchQuery('')}
-                          style={{ background: 'none', border: 'none', color: '#ff00ff', cursor: 'pointer', fontSize: '0.78rem', textDecoration: 'underline' }}
+                          style={{ background: 'none', border: 'none', color: '#00f0ff', cursor: 'pointer', fontSize: '0.78rem', textDecoration: 'underline' }}
                         >
                           {t.form.clearSearch}
                         </button>
@@ -4633,7 +4680,7 @@ Transcript:
                         borderRadius: 0,
                         border: '1px dashed rgba(255, 255, 255, 0.1)'
                       }}>
-                        <span style={{ fontSize: '1.75rem', display: 'block', marginBottom: '0.5rem', color: '#ff00ff' }}>&gt;_</span>
+                        <span style={{ fontSize: '1.75rem', display: 'block', marginBottom: '0.5rem', color: '#00f0ff' }}>&gt;_</span>
                         <p style={{ margin: 0, fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
                           {t.form.noHistoryMatch}
                         </p>
@@ -4644,9 +4691,9 @@ Transcript:
                             style={{
                               marginTop: '0.75rem',
                               fontSize: '0.78rem',
-                              background: 'rgba(255, 0, 255, 0.15)',
-                              border: '1px solid #ff00ff',
-                              color: '#ff00ff',
+                              background: 'rgba(0, 240, 255, 0.15)',
+                              border: '1px solid #00f0ff',
+                              color: '#00f0ff',
                               borderRadius: 0,
                               padding: '0.35rem 0.8rem',
                               cursor: 'pointer'
@@ -4744,7 +4791,7 @@ Transcript:
 
                                 {/* Matched clip/quote search preview */}
                                 {matchedClip && (
-                                  <div style={{ fontSize: '0.72rem', color: '#ff00ff', marginTop: '0.25rem', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                                  <div style={{ fontSize: '0.72rem', color: '#00f0ff', marginTop: '0.25rem', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
                                     <span style={{ fontWeight: 600 }}>* {t.form.matchedClipLabel}:</span>
                                     <span style={{ fontStyle: 'italic', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>"{matchedClip}"</span>
                                   </div>
@@ -5671,12 +5718,12 @@ Transcript:
                                       fontSize: '0.65rem',
                                       fontWeight: 700,
                                       fontFamily: 'var(--font-mono)',
-                                      color: '#ff00ff',
-                                      background: 'rgba(255, 0, 255, 0.12)',
+                                      color: '#00f0ff',
+                                      background: 'rgba(0, 240, 255, 0.12)',
                                       padding: '0.15rem 0.4rem',
                                       borderRadius: 0,
-                                      border: '1px solid #ff00ff',
-                                      boxShadow: '0 0 6px rgba(255, 0, 255, 0.3)'
+                                      border: '1px solid #00f0ff',
+                                      boxShadow: '0 0 6px rgba(0, 240, 255, 0.3)'
                                     }}>
                                       {t.results.markedBadge}
                                     </div>
@@ -5764,10 +5811,10 @@ Transcript:
                                     borderRadius: 0,
                                     boxShadow: 'none',
                                     whiteSpace: 'nowrap',
-                                    background: '#ff00ff',
+                                    background: '#00f0ff',
                                     color: '#000000',
                                     fontWeight: 700,
-                                    border: '1px solid #ff00ff',
+                                    border: '1px solid #00f0ff',
                                     display: 'inline-flex',
                                     alignItems: 'center',
                                     gap: '0.35rem'
@@ -5875,14 +5922,14 @@ Transcript:
             {/* If no video selected and no history in Tab 02 */}
             {!result && history.length === 0 && (
               <div className="glass-panel" style={{ padding: '3.5rem 2rem', textAlign: 'center', borderRadius: 0, background: '#0a0a0f', border: '1px solid #201e2c' }}>
-                <span style={{ fontSize: '2rem', color: '#ff00ff', display: 'block', marginBottom: '1rem', fontFamily: 'var(--font-mono)', fontWeight: 800 }}>&gt;_</span>
+                <span style={{ fontSize: '2rem', color: '#00f0ff', display: 'block', marginBottom: '1rem', fontFamily: 'var(--font-mono)', fontWeight: 800 }}>&gt;_</span>
                 <h3 style={{ fontSize: '1.1rem', color: '#fff', marginBottom: '0.5rem', fontWeight: 600 }}>Belum Ada Klip yang Dianalisis</h3>
                 <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', marginBottom: '1.5rem' }}>Silakan masukkan URL YouTube, link Google Drive, atau unggah video di Tab 01 // SOURCE.</p>
                 <button
                   type="button"
                   className="glowing-btn"
                   onClick={() => setWorkflowTab('source')}
-                  style={{ padding: '0.65rem 1.6rem', borderRadius: 0, background: '#ff00ff', color: '#000', fontWeight: 700 }}
+                  style={{ padding: '0.65rem 1.6rem', borderRadius: 0, background: '#00f0ff', color: '#000', fontWeight: 700 }}
                 >
                   [ 01 // KE TAB SUMBER ]
                 </button>
@@ -5949,7 +5996,7 @@ Transcript:
         {/* Transcript Language Confirmation Notice Modal before Hack Clips */}
         {showLanguageConfirmModal && (
           <div className="custom-confirm-modal-overlay" style={{ zIndex: 10000 }}>
-            <div className="custom-confirm-modal-card" style={{ maxWidth: '520px', textAlign: 'left', alignItems: 'stretch', background: '#0a0910', border: '1.5px solid #ff00ff', boxShadow: '0 0 35px rgba(255, 0, 255, 0.35)' }}>
+            <div className="custom-confirm-modal-card" style={{ maxWidth: '520px', textAlign: 'left', alignItems: 'stretch', background: '#0a0910', border: '1.5px solid #00f0ff', boxShadow: '0 0 35px rgba(0, 240, 255, 0.35)' }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #272238', paddingBottom: '0.75rem', marginBottom: '1rem' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                   <span style={{ color: '#ff1e27', fontFamily: 'var(--font-mono)', fontWeight: 800, fontSize: '1rem' }}>&gt;_</span>
@@ -5993,15 +6040,15 @@ Transcript:
                       fontWeight: 700,
                       fontSize: '0.88rem',
                       cursor: 'pointer',
-                      background: transcriptLanguage === 'en' ? 'rgba(255, 0, 255, 0.12)' : '#0d0d14',
-                      border: transcriptLanguage === 'en' ? '2px solid #ff00ff' : '1px solid #272238',
-                      color: transcriptLanguage === 'en' ? '#ff00ff' : 'var(--text-muted)',
-                      boxShadow: transcriptLanguage === 'en' ? '0 0 15px rgba(255, 0, 255, 0.3)' : 'none'
+                      background: transcriptLanguage === 'en' ? 'rgba(0, 240, 255, 0.12)' : '#0d0d14',
+                      border: transcriptLanguage === 'en' ? '2px solid #00f0ff' : '1px solid #272238',
+                      color: transcriptLanguage === 'en' ? '#00f0ff' : 'var(--text-muted)',
+                      boxShadow: transcriptLanguage === 'en' ? '0 0 15px rgba(0, 240, 255, 0.3)' : 'none'
                     }}
                   >
                     <span>[EN]</span>
                     <span>ENGLISH</span>
-                    {transcriptLanguage === 'en' && <span style={{ color: '#ff00ff', marginLeft: '0.25rem' }}>✓</span>}
+                    {transcriptLanguage === 'en' && <span style={{ color: '#00f0ff', marginLeft: '0.25rem' }}>✓</span>}
                   </button>
                   <button
                     type="button"
@@ -6019,15 +6066,15 @@ Transcript:
                       fontWeight: 700,
                       fontSize: '0.88rem',
                       cursor: 'pointer',
-                      background: transcriptLanguage === 'id' ? 'rgba(255, 0, 255, 0.12)' : '#0d0d14',
-                      border: transcriptLanguage === 'id' ? '2px solid #ff00ff' : '1px solid #272238',
-                      color: transcriptLanguage === 'id' ? '#ff00ff' : 'var(--text-muted)',
-                      boxShadow: transcriptLanguage === 'id' ? '0 0 15px rgba(255, 0, 255, 0.3)' : 'none'
+                      background: transcriptLanguage === 'id' ? 'rgba(0, 240, 255, 0.12)' : '#0d0d14',
+                      border: transcriptLanguage === 'id' ? '2px solid #00f0ff' : '1px solid #272238',
+                      color: transcriptLanguage === 'id' ? '#00f0ff' : 'var(--text-muted)',
+                      boxShadow: transcriptLanguage === 'id' ? '0 0 15px rgba(0, 240, 255, 0.3)' : 'none'
                     }}
                   >
                     <span>[ID]</span>
                     <span>INDONESIA</span>
-                    {transcriptLanguage === 'id' && <span style={{ color: '#ff00ff', marginLeft: '0.25rem' }}>✓</span>}
+                    {transcriptLanguage === 'id' && <span style={{ color: '#00f0ff', marginLeft: '0.25rem' }}>✓</span>}
                   </button>
                 </div>
               </div>
@@ -6038,7 +6085,7 @@ Transcript:
                   id="skip-lang-check"
                   checked={skipLanguageConfirm}
                   onChange={(e) => setSkipLanguageConfirm(e.target.checked)}
-                  style={{ width: '16px', height: '16px', accentColor: '#ff00ff', cursor: 'pointer' }}
+                  style={{ width: '16px', height: '16px', accentColor: '#00f0ff', cursor: 'pointer' }}
                 />
                 <label htmlFor="skip-lang-check" style={{ cursor: 'pointer' }}>
                   Jangan tampilkan konfirmasi ini lagi (ingat untuk sesi ini)
@@ -6097,6 +6144,109 @@ Transcript:
           isOpen={isUpdateModalOpen}
           onClose={() => setIsUpdateModalOpen(false)}
         />
+
+        {/* Gemini Multi-Key Rolling Manager Modal (Max 10) */}
+        {showMultiKeyModal && (
+          <div className="custom-confirm-modal-overlay">
+            <div className="custom-confirm-modal-card" style={{ maxWidth: '640px', textAlign: 'left', background: '#0a0d14', border: '1.5px solid var(--primary)', boxShadow: '0 0 30px var(--primary-glow)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.75rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <Layers size={18} color="var(--primary)" />
+                  <h3 style={{ margin: 0, fontSize: '1rem', fontFamily: 'var(--font-mono)', fontWeight: 800, color: 'var(--text-primary)', letterSpacing: '0.04em' }}>
+                    GEMINI ROLLING API MANAGER (MAKS. 10 KEY)
+                  </h3>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowMultiKeyModal(false)}
+                  style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '0.2rem' }}
+                >
+                  <X size={18} />
+                </button>
+              </div>
+
+              <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '1rem', lineHeight: 1.5 }}>
+                Cheat Clip PRO mendukung <strong>Auto-Rolling Load Balancing</strong> hingga <strong>10 Gemini API Key</strong>. Jika salah satu key mencapai batas rate-limit (HTTP 429) atau kuota per menit habis, sistem akan otomatis beralih ke key berikutnya tanpa menghentikan analisis video.
+              </p>
+
+              <div style={{ marginBottom: '1rem' }}>
+                <label style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', fontWeight: 700, color: 'var(--primary)', marginBottom: '0.4rem', fontFamily: 'var(--font-mono)' }}>
+                  <span>DAFTAR API KEY (1 KEY PER BARIS ATAU PISAHKAN DENGAN KOMA)</span>
+                  <span>{multiKeyInputText ? multiKeyInputText.split(/[,;\n\r\t]+/).filter(k => k.trim()).length : 0} / 10 KEY</span>
+                </label>
+                <textarea
+                  value={multiKeyInputText}
+                  onChange={(e) => setMultiKeyInputText(e.target.value)}
+                  placeholder={`AIzaSyExampleKey1...\nAIzaSyExampleKey2...\nAIzaSyExampleKey3...`}
+                  rows={6}
+                  style={{
+                    width: '100%',
+                    background: '#06080e',
+                    border: '1px solid var(--border-color)',
+                    borderRadius: 0,
+                    color: 'var(--primary)',
+                    fontFamily: 'var(--font-mono)',
+                    fontSize: '0.8rem',
+                    padding: '0.75rem',
+                    lineHeight: '1.5',
+                    outline: 'none',
+                    resize: 'vertical',
+                    boxSizing: 'border-box'
+                  }}
+                />
+              </div>
+
+              {/* Realtime Parsed Slots Preview */}
+              <div style={{ marginBottom: '1.25rem' }}>
+                <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginBottom: '0.4rem', fontFamily: 'var(--font-mono)', fontWeight: 700 }}>
+                  KEY SLOTS AKTIF (TERDETEKSI):
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '0.4rem', maxHeight: '150px', overflowY: 'auto' }}>
+                  {multiKeyInputText.split(/[,;\n\r\t]+/).map(k => k.trim().replace(/^['"\[]+|['"\]]+$/g, '')).filter(Boolean).slice(0, 10).map((k, idx) => (
+                    <div key={idx} style={{ background: 'rgba(0, 240, 255, 0.05)', border: '1px solid rgba(0, 240, 255, 0.25)', padding: '0.35rem 0.6rem', fontSize: '0.72rem', fontFamily: 'var(--font-mono)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <span style={{ color: 'var(--primary)', fontWeight: 700 }}>Slot {idx + 1}:</span>
+                      <span style={{ color: 'var(--text-primary)' }}>{k.length > 10 ? `${k.slice(0, 6)}...${k.slice(-4)}` : k}</span>
+                      <span style={{ color: '#00ff66', fontSize: '0.65rem' }}>[READY]</span>
+                    </div>
+                  ))}
+                  {(!multiKeyInputText || multiKeyInputText.split(/[,;\n\r\t]+/).filter(k => k.trim()).length === 0) && (
+                    <div style={{ color: 'var(--text-disabled)', fontSize: '0.75rem', fontStyle: 'italic', padding: '0.5rem 0' }}>
+                      Belum ada API Key yang dimasukkan.
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
+                <button
+                  type="button"
+                  onClick={() => setShowMultiKeyModal(false)}
+                  style={{ background: 'transparent', border: '1px solid var(--border-color)', color: 'var(--text-secondary)', padding: '0.5rem 1.1rem', cursor: 'pointer', fontFamily: 'var(--font-mono)', fontSize: '0.78rem', fontWeight: 600 }}
+                >
+                  Batal
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const parsed = multiKeyInputText
+                      .split(/[,;\n\r\t]+/)
+                      .map(k => k.trim().replace(/^['"\[]+|['"\]]+$/g, ''))
+                      .filter(Boolean)
+                      .slice(0, 10);
+                    const formatted = parsed.join(', ');
+                    setApiKey(formatted);
+                    localStorage.setItem('cheat_clip_gemini_api_key', formatted);
+                    if (formatted) setError(null);
+                    setShowMultiKeyModal(false);
+                  }}
+                  style={{ background: 'var(--primary)', border: '1px solid var(--primary)', color: '#000', padding: '0.5rem 1.3rem', cursor: 'pointer', fontFamily: 'var(--font-mono)', fontSize: '0.78rem', fontWeight: 800 }}
+                >
+                  Simpan & Terapkan ({multiKeyInputText.split(/[,;\n\r\t]+/).filter(k => k.trim()).slice(0, 10).length} Key)
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Clip Trimmer & Context Editor Modal */}
         <ClipTrimmerModal

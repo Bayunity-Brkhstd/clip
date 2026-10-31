@@ -61,7 +61,7 @@
 .trimmer-limit-pill {
   font-size: 0.68rem;
   padding: 0.15rem 0.55rem;
-  background: rgba(255, 0, 255, 0.12);
+  background: rgba(0, 240, 255, 0.12);
   border: 1px solid var(--primary);
   color: var(--primary);
   font-family: var(--font-mono);
@@ -316,7 +316,7 @@
 }
 
 .trimmer-transcript-line.active {
-  background: rgba(255, 0, 255, 0.08);
+  background: rgba(0, 240, 255, 0.08);
   border-left: 2px solid var(--primary);
   color: var(--text-primary);
 }
