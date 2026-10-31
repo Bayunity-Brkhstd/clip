@@ -47,7 +47,7 @@ Make sure you have the following installed:
 Open your terminal and clone the repository:
 
 ```bash
-git clone https://github.com/galihjuansaputra/cheat-clip-pro.git
+git clone https://github.com/Bayunity-Brkhstd/clip.git
 cd cheat-clip-pro
 ```
 
@@ -169,6 +169,15 @@ Cheat Clip PRO uses Google's AI to find the best viral moments for free:
   * **Intel** (`h264_qsv` on Arc & UHD Graphics)
   * **Apple Mac & CPU Software** (`libx264` universal high-speed fallback)
 * You can switch your preferred hardware acceleration encoder anytime in the Render Settings or History card.
+
+---
+
+---
+
+## 👥 Contributors
+
+- **[Bayunity-Brkhstd](https://github.com/Bayunity-Brkhstd)** — Creator & Lead Maintainer
+- **[Antigravity](https://deepmind.google/)** — AI Autonomous Engineering & Coding Partner (Google DeepMind)
 
 ---
 

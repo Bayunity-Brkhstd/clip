@@ -237,3 +237,4 @@ Untuk merilis Cheat Clip PRO sebagai aplikasi desktop Windows mandiri:
 | **Subproses render hang tanpa akhir di mode desktop** | `backend/main.py` tidak mencegat `-m yt_dlp`, menyebabkan spawning berulang server FastAPI. | Pastikan interceptor `sys.argv[1] == "-m" ... yt_dlp` tetap berada di baris pertama `main.py`. |
 | **Unduhan file tidak tersimpan di Electron** | Window Electron tidak memiliki listener unduhan native. | `electron/main.cjs` telah mengimplementasikan handler `will-download` yang menyimpan file langsung ke folder `Downloads` OS. |
 | **Error Kuota Gemini (HTTP 429)** | Single key melebihi batas request rate free tier. | Masukkan beberapa key (hingga 10 API Key) via modal Multi-Key Manager untuk mengaktifkan load-balancing otomatis. |
+

@@ -169,3 +169,4 @@ flowchart LR
 2. **Ketersediaan Layanan Tanpa Limit Kuota**: Multi-key rolling API menekan tingkat kegagalan akibat error HTTP 429 hingga **di bawah 1%** saat menggunakan minimal 3 Gemini keys.
 3. **Efisiensi Waktu Rendering**: Mode Client GPU WebCodecs mampu merender klip 60 detik dalam waktu kurang dari **20 detik** pada GPU standar laptop.
 4. **Zero Configuration**: Pengguna dapat menjalankan versi desktop installer tanpa perlu menginstal Python, Node.js, atau dependensi eksternal secara manual.
+

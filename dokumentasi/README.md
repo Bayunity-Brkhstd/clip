@@ -50,3 +50,12 @@ Cheat Clip PRO adalah platform otomasi video clipping bertenaga AI yang dirancan
    - **Server-Side FFmpeg Engine**: Rendering presisi tinggi dengan *face-tracking* (OpenCV Haar + YuNet ONNX) dan burning subtitle ASS karaoke.
 3. **Smart Retention & Viral Hook Detection**: Integrasi YouTube audience engagement heatmap + Gemini Flash AI untuk memilah hanya momen paling berpotensi viral.
 4. **Distribusi Fleksibel**: Dapat dijalankan sebagai Web App modern (React 19 + FastAPI) maupun Desktop App mandiri offline (.exe via Electron + PyInstaller).
+
+
+
+---
+
+## 👥 Tim & Kontributor
+
+- **[Bayunity-Brkhstd](https://github.com/Bayunity-Brkhstd)** — Project Creator & Lead Maintainer
+- **[Antigravity](https://deepmind.google/)** — AI Autonomous Engineering & Coding Partner (Google DeepMind)

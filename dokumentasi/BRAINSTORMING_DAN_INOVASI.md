@@ -144,3 +144,4 @@ flowchart TD
 ### Threats (Tantangan)
 - **Perubahan Ekstraktor YouTube**: Pembaruan sistem antibot YouTube yang berkala mengharuskan pembaruan rutin pada library `yt-dlp`.
 - **Kompetitor SaaS Bermodal Besar** (seperti Opus Clip, Klap, Munch): Membutuhkan diferensiasi fokus pada kemudahan eksekusi lokal tanpa biaya langganan bulanan mahal.
+
