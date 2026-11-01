@@ -37,8 +37,9 @@ flowchart TD
 | **03** | [`diagram.md`](./diagram.md) | **Diagram Arsitektur Komponen Visual.** Peta visual relasi dan alur data antara Client (React), API Router (FastAPI), Analysis Services, Media Pipeline, dan External Services. | **Ketiga** |
 | **04** | [`PANDUAN_EKSEKUSI_STRUKTURAL.md`](./PANDUAN_EKSEKUSI_STRUKTURAL.md) | **Plan Eksekusi Teknis & Workflow Pipeline.** Alur operasional modular end-to-end: input ingestion, transkripsi Whisper/YouTube, Gemini Rolling API (10 keys), Trimmer, hingga Rendering Dual-Engine (Client GPU WebCodecs vs Server FFmpeg). | **Keempat** |
 | **05** | [`AGENTS.md`](./AGENTS.md) | **SOP Developer & Sistem AI.** Aturan esensial PyInstaller standalone mode (`sys.frozen`), yt-dlp CLI interceptor, resolusi path aset/font, keamanan token, dan styling Vanilla CSS. | **Kelima** |
-| **06** | [`antigravity.md`](./antigravity.md) | **Autonomous Agent Engineering Guardrails.** Panduan disiplin modifikasi kode, diff minimalis, closed-loop terminal verification, dan pencegahan loop agent di Google Antigravity IDE. | **Keenam** |
-| **07** | [`BRAINSTORMING_DAN_INOVASI.md`](./BRAINSTORMING_DAN_INOVASI.md) | **Inovasi, Riset & Ideasi Masa Depan.** Rencana pengembangan model Vision multimodal Gemini 3.8, auto-caption animasi ala Hormozi/Beast, integrasi auto-post medsos API, arsitektur distributed rendering, dan model bisnis SaaS. | **Paling Terakhir** |
+| **06** | [`installapk.md`](./installapk.md) | **Panduan Build Desktop Installer (.exe).** Panduan teknis kompilasi mandiri: requirement, langkah demi langkah, command PyInstaller & Electron-Builder, serta troubleshooting cache. | **Keenam** |
+| **07** | [`antigravity.md`](./antigravity.md) | **Autonomous Agent Engineering Guardrails.** Panduan disiplin modifikasi kode, diff minimalis, closed-loop terminal verification, dan pencegahan loop agent di Google Antigravity IDE. | **Ketujuh** |
+| **08** | [`BRAINSTORMING_DAN_INOVASI.md`](./BRAINSTORMING_DAN_INOVASI.md) | **Inovasi, Riset & Ideasi Masa Depan.** Rencana pengembangan model Vision multimodal Gemini 3.8, auto-caption animasi ala Hormozi/Beast, integrasi auto-post medsos API, arsitektur distributed rendering, dan model bisnis SaaS. | **Paling Terakhir** |
 
 ---
 
