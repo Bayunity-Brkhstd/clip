@@ -163,9 +163,17 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 
 if getattr(sys, "frozen", False):
-    dist_dir = Path(getattr(sys, "_MEIPASS", Path(sys.executable).parent)) / "dist"
-    if not dist_dir.exists():
-        dist_dir = Path(sys.executable).parent.parent / "dist"
+    exe_dir = Path(sys.executable).parent
+    meipass = Path(getattr(sys, "_MEIPASS", exe_dir))
+    candidates = [
+        meipass / "dist",
+        exe_dir / "dist",
+        exe_dir / "_internal" / "dist",
+        exe_dir.parent / "dist",
+        exe_dir.parent.parent / "dist",
+        exe_dir.parent.parent.parent / "dist",
+    ]
+    dist_dir = next((c for c in candidates if c.exists() and (c / "index.html").exists()), exe_dir / "dist")
 else:
     dist_dir = Path(__file__).resolve().parent.parent / "dist"
 
@@ -178,9 +186,13 @@ if dist_dir.exists() and (dist_dir / "index.html").exists():
         file_candidate = dist_dir / full_path
         if full_path and file_candidate.exists() and file_candidate.is_file():
             return FileResponse(file_candidate)
-        return FileResponse(dist_dir / "index.html")
+        response = FileResponse(dist_dir / "index.html")
+        response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+        response.headers["Pragma"] = "no-cache"
+        response.headers["Expires"] = "0"
+        return response
     
-    logger.info("Cheat Clip PRO production frontend mounted from dist/.")
+    logger.info(f"Cheat Clip PRO production frontend mounted from {dist_dir}.")
 else:
     logger.info("Cheat Clip PRO backend routers mounted successfully.")
 
@@ -188,4 +200,7 @@ if __name__ == "__main__":
     import uvicorn
     host = os.environ.get("HOST", "127.0.0.1")
     port = int(os.environ.get("PORT", "8000"))
-    uvicorn.run("backend.main:app", host=host, port=port, reload=True)
+    if getattr(sys, "frozen", False):
+        uvicorn.run(app, host=host, port=port, reload=False)
+    else:
+        uvicorn.run("backend.main:app", host=host, port=port, reload=True)

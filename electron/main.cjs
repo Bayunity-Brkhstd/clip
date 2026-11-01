@@ -219,7 +219,12 @@ async function createWindow() {
     await waitForUrl('http://localhost:5173', 15000);
     mainWindow.loadURL('http://localhost:5173');
   } else {
-    mainWindow.loadURL(`http://127.0.0.1:${BACKEND_PORT}/`);
+    try {
+      await mainWindow.webContents.session.clearCache();
+    } catch (_) {}
+    mainWindow.loadURL(`http://127.0.0.1:${BACKEND_PORT}/`, {
+      extraHeaders: 'pragma: no-cache\ncache-control: no-cache\n'
+    });
   }
 
   mainWindow.on('closed', () => {
