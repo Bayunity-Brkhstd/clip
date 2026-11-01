@@ -115,7 +115,7 @@ cheat-clip-pro/
 | `npm run build` | Compiles TypeScript and builds production frontend bundle | `dist/` |
 | `npm run electron:build:backend` | Bundles FastAPI backend into standalone executable using PyInstaller | `dist_backend/cheat-clip-backend/` |
 | `npm run electron:pack` | Packages Electron app without building full setup installer | `dist_installer/win-unpacked/Cheat Clip PRO.exe` |
-| `npm run electron:dist` | Generates full NSIS Windows installer setup wizard | `dist_installer/Cheat Clip PRO Setup 1.0.0.exe` |
+| `npm run electron:dist` | Generates full NSIS Windows installer setup wizard | `dist_installer/Cheat Clip PRO Setup 1.1.0.exe` |
 | `npm run build:desktop` | Runs full automated pipeline (frontend -> backend -> installer) | Complete release build |
 
 ---

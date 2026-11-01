@@ -218,7 +218,7 @@ Untuk merilis Cheat Clip PRO sebagai aplikasi desktop Windows mandiri:
    ```bash
    npm run electron:dist
    ```
-   Electron Builder menggabungkan `dist/` dan `dist_backend/` menjadi satu installer NSIS profesional di `dist_installer/Cheat Clip PRO Setup 1.0.0.exe`.
+   Electron Builder menggabungkan `dist/` dan `dist_backend/` menjadi satu installer NSIS profesional di `dist_installer/Cheat Clip PRO Setup 1.1.0.exe`.
 
 4. **One-Click Build**:
    Cukup jalankan script batch otomatis:
