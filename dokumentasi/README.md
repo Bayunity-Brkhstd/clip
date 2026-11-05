@@ -12,11 +12,14 @@ Agar mendapatkan pemahaman menyeluruh tanpa kehilangan konteks, ikuti urutan pem
 flowchart TD
     step1["1. DIBACA PERTAMA: README.md<br/>(Peta Dokumen & Indeks Eksekusi)"]
     step2["2. PRD_CHEAT_CLIP_PRO.md<br/>(Product Requirements Document Lengkap)"]
-    step3["3. diagram.md<br/>(Diagram Visual Interaktif Arsitektur Komponen)"]
-    step4["4. PANDUAN_EKSEKUSI_STRUKTURAL.md<br/>(Plan Eksekusi Sistem & Pipeline End-to-End)"]
-    step5["5. AGENTS.md<br/>(Aturan Arsitektur, Frozen Mode & Guardrail Kode)"]
-    step6["6. antigravity.md<br/>(Engineering Rules untuk Autonomous Coding Agent)"]
-    step7["7. DIBACA TERAKHIR: BRAINSTORMING_DAN_INOVASI.md<br/>(Ide Fitur Baru, Inovasi AI & Monetisasi)"]
+    step3["3. context.md<br/>(Latar Belakang, Domain & Ekosistem)"]
+    step4["4. design.md<br/>(Desain Arsitektur Sistem & UI/UX Blue Neon)"]
+    step5["5. diagram.md<br/>(Diagram Visual Interaktif Arsitektur Komponen)"]
+    step6["6. PANDUAN_EKSEKUSI_STRUKTURAL.md<br/>(Plan Eksekusi Sistem & Pipeline End-to-End)"]
+    step7["7. AGENTS.md<br/>(Aturan Arsitektur, Frozen Mode & Guardrail Kode)"]
+    step8["8. installapk.md<br/>(Panduan Teknis Kompilasi Standalone Installer)"]
+    step9["9. antigravity.md<br/>(Engineering Rules untuk Autonomous Coding Agent)"]
+    step10["10. DIBACA TERAKHIR: BRAINSTORMING_DAN_INOVASI.md<br/>(Ide Fitur Baru, Inovasi AI & Monetisasi)"]
 
     step1 --> step2
     step2 --> step3
@@ -24,6 +27,9 @@ flowchart TD
     step4 --> step5
     step5 --> step6
     step6 --> step7
+    step7 --> step8
+    step8 --> step9
+    step9 --> step10
 ```
 
 ---
@@ -34,12 +40,14 @@ flowchart TD
 | :---: | :--- | :--- | :---: |
 | **01** | [`README.md`](./README.md) *(Dokumen Ini)* | **Pintu Gerbang & Peta Navigasi.** Berisi panduan urutan baca terstruktur, matriks dokumen, dan ikhtisar eksekutif proyek. | **Wajib Pertama** |
 | **02** | [`PRD_CHEAT_CLIP_PRO.md`](./PRD_CHEAT_CLIP_PRO.md) | **Product Requirements Document (PRD).** Definisi produk menyeluruh: visi, latar belakang masalah, persona pengguna, spesifikasi fungsional (Tab 01 - Tab 03), metrik keberhasilan, dan batas ruang lingkup (*scope*). | **Kedua** |
-| **03** | [`diagram.md`](./diagram.md) | **Diagram Arsitektur Komponen Visual.** Peta visual relasi dan alur data antara Client (React), API Router (FastAPI), Analysis Services, Media Pipeline, dan External Services. | **Ketiga** |
-| **04** | [`PANDUAN_EKSEKUSI_STRUKTURAL.md`](./PANDUAN_EKSEKUSI_STRUKTURAL.md) | **Plan Eksekusi Teknis & Workflow Pipeline.** Alur operasional modular end-to-end: input ingestion, transkripsi Whisper/YouTube, Gemini Rolling API (10 keys), Trimmer, hingga Rendering Dual-Engine (Client GPU WebCodecs vs Server FFmpeg). | **Keempat** |
-| **05** | [`AGENTS.md`](./AGENTS.md) | **SOP Developer & Sistem AI.** Aturan esensial PyInstaller standalone mode (`sys.frozen`), yt-dlp CLI interceptor, resolusi path aset/font, keamanan token, dan styling Vanilla CSS. | **Kelima** |
-| **06** | [`installapk.md`](./installapk.md) | **Panduan Build Desktop Installer (.exe).** Panduan teknis kompilasi mandiri: requirement, langkah demi langkah, command PyInstaller & Electron-Builder, serta troubleshooting cache. | **Keenam** |
-| **07** | [`antigravity.md`](./antigravity.md) | **Autonomous Agent Engineering Guardrails.** Panduan disiplin modifikasi kode, diff minimalis, closed-loop terminal verification, dan pencegahan loop agent di Google Antigravity IDE. | **Ketujuh** |
-| **08** | [`BRAINSTORMING_DAN_INOVASI.md`](./BRAINSTORMING_DAN_INOVASI.md) | **Inovasi, Riset & Ideasi Masa Depan.** Rencana pengembangan model Vision multimodal Gemini 3.8, auto-caption animasi ala Hormozi/Beast, integrasi auto-post medsos API, arsitektur distributed rendering, dan model bisnis SaaS. | **Paling Terakhir** |
+| **03** | [`context.md`](./context.md) | **Konteks & Pengetahuan Domain.** Lanskap industri short-form, perbandingan model operasional (Web SaaS vs Desktop Standalone), tantangan teknis teruji, dan kamus istilah (*glossary*). | **Ketiga** |
+| **04** | [`design.md`](./design.md) | **Desain Sistem & Antarmuka UI/UX.** Arsitektur teknis decoupled, siklus state alur kerja, kontrak endpoint API, serta Blue Neon Cyberpunk Design System. | **Keempat** |
+| **05** | [`diagram.md`](./diagram.md) | **Diagram Arsitektur Komponen Visual.** Peta visual relasi dan alur data antara Client (React), API Router (FastAPI), Analysis Services, Media Pipeline, dan External Services. | **Kelima** |
+| **06** | [`PANDUAN_EKSEKUSI_STRUKTURAL.md`](./PANDUAN_EKSEKUSI_STRUKTURAL.md) | **Plan Eksekusi Teknis & Workflow Pipeline.** Alur operasional modular end-to-end: input ingestion, transkripsi Whisper/YouTube, Gemini Rolling API (10 keys), Trimmer, hingga Rendering Dual-Engine (Client GPU WebCodecs vs Server FFmpeg). | **Keenam** |
+| **07** | [`AGENTS.md`](./AGENTS.md) | **SOP Developer & Sistem AI.** Aturan esensial PyInstaller standalone mode (`sys.frozen`), yt-dlp CLI interceptor, resolusi path aset/font, keamanan token, dan styling Vanilla CSS. | **Ketujuh** |
+| **08** | [`installapk.md`](./installapk.md) | **Panduan Build Desktop Installer (.exe).** Panduan teknis kompilasi mandiri: requirement, langkah demi langkah, command PyInstaller & Electron-Builder, serta troubleshooting cache. | **Kedelapan** |
+| **09** | [`antigravity.md`](./antigravity.md) | **Autonomous Agent Engineering Guardrails.** Panduan disiplin modifikasi kode, diff minimalis, closed-loop terminal verification, dan pencegahan loop agent di Google Antigravity IDE. | **Kesembilan** |
+| **10** | [`BRAINSTORMING_DAN_INOVASI.md`](./BRAINSTORMING_DAN_INOVASI.md) | **Inovasi, Riset & Ideasi Masa Depan.** Rencana pengembangan model Vision multimodal Gemini 3.8, auto-caption animasi ala Hormozi/Beast, integrasi auto-post medsos API, arsitektur distributed rendering, dan model bisnis SaaS. | **Paling Terakhir** |
 
 ---
 

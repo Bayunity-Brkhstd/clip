@@ -264,3 +264,4 @@ Setelah semua langkah berhasil, file distribusi siap dibagikan kepada pengguna:
 | **Windows NSIS Installer** | `dist_installer/Cheat Clip PRO Setup 1.1.0.exe` | Wizard installer resmi Windows (desktop & start menu shortcut) |
 | **Unpacked Directory** | `dist_installer/win-unpacked/Cheat Clip PRO.exe` | Versi portable tanpa instalasi (untuk debugging cepat) |
 | **Backend Standalone Binary** | `dist_backend/cheat-clip-backend/cheat-clip-backend.exe` | Server backend mandiri tanpa runtime Python terpisah |
+
