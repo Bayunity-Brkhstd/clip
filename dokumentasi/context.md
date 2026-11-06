@@ -93,3 +93,4 @@ Cheat Clip PRO dirancang secara arsitektural untuk berjalan dalam dua lingkungan
 - Plan Eksekusi Modular: [`PANDUAN_EKSEKUSI_STRUKTURAL.md`](./PANDUAN_EKSEKUSI_STRUKTURAL.md)
 - Guardrails Teknis & Frozen Mode: [`AGENTS.md`](./AGENTS.md)
 - Panduan Build Installer Desktop: [`installapk.md`](./installapk.md)
+

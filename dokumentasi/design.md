@@ -252,3 +252,4 @@ Cheat Clip PRO memisahkan font secara tegas berdasarkan fungsi data:
 - Spesifikasi Kebutuhan Produk: [`PRD_CHEAT_CLIP_PRO.md`](./PRD_CHEAT_CLIP_PRO.md)
 - Plan Eksekusi Modular: [`PANDUAN_EKSEKUSI_STRUKTURAL.md`](./PANDUAN_EKSEKUSI_STRUKTURAL.md)
 - Panduan Kompilasi Installer: [`installapk.md`](./installapk.md)
+

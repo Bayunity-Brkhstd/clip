@@ -2,7 +2,7 @@
 
 Dokumen ini berisi panduan teknis langkah demi langkah (*step-by-step*) untuk membangun (*build*) paket **Standalone Desktop Installer Windows (`.exe` NSIS Setup Wizard)** Cheat Clip PRO dari kode sumber (*source code*).
 
-Setelah proses build selesai, Anda akan mendapatkan satu file installer mandiri (misal: `Cheat Clip PRO Setup 1.1.0.exe`) yang siap didistribusikan kepada pengguna akhir tanpa memerlukan instalasi Node.js, Python, FFmpeg, atau Git manual di PC target.
+Setelah proses build selesai, Anda akan mendapatkan file installer mandiri (misal: `Cheat Clip PRO Setup 1.2.0.exe`) yang siap didistribusikan kepada pengguna akhir tanpa memerlukan instalasi Node.js, Python, FFmpeg, atau Git manual di PC target.
 
 ---
 
@@ -12,20 +12,22 @@ Sebelum memulai proses kompilasi, pastikan sistem pengembang telah memenuhi spes
 
 ### A. Perangkat Keras (Hardware)
 - **Sistem Operasi**: Windows 10 atau Windows 11 (64-bit Architecture).
-- **RAM**: Minimal **8 GB** (Sangat disarankan **16 GB**, karena PyInstaller mem-bundle library AI berukuran masif seperti PyTorch, Whisper, dan OpenCV).
-- **Ruang Penyimpanan (Disk)**: Minimal **10 GB ruang kosong** untuk menampung dependensi, cache kompilasi, dan file output binary.
+- **RAM**: Minimal **8 GB** (Disarankan **16 GB**, karena PyInstaller mem-bundle library AI berukuran masif seperti PyTorch, Whisper, dan OpenCV).
+- **Ruang Penyimpanan (Disk)**: Minimal **10 GB ruang kosong** untuk dependensi, cache build, dan file output binary.
 
 ### B. Perangkat Lunak (Software Wajib)
-1. **Node.js**: Versi **v18.x**, **v20.x**, atau yang lebih baru (LTS).
+1. **Node.js**: Versi **v18.x**, **v20.x**, atau **v22+** (LTS).
    - Verifikasi di terminal:
      ```powershell
      node -v
-     npm -v
+     npm.cmd -v
      ```
 2. **Python**: Versi **3.10 sampai 3.14 (64-bit)**.
-   - *PENTING*: Saat instalasi Python di Windows, pastikan opsi **"Add Python to PATH"** dicentang.
+   - *PENTING*: Pastikan Python adalah versi 64-bit dan opsi **"Add Python to PATH"** dicentang.
    - Verifikasi di terminal:
      ```powershell
+     py -3.14 --version
+     # atau
      python --version
      ```
 3. **Git for Windows**:
@@ -51,217 +53,167 @@ flowchart TD
     end
 
     subgraph S3["3. Electron NSIS Packaging"]
-        electron_core["Electron 44 Runtime + main.cjs"]
+        electron_core["Electron 45 Runtime + main.cjs"]
         dist_ui --> electron_core
         dist_py --> electron_core
-        electron_core -->|"electron-builder"| installer_exe["Windows Installer Wizard<br/>[dist_installer/Cheat Clip PRO Setup 1.1.0.exe]"]
+        electron_core -->|"electron-builder"| installer_exe["Windows Installer Wizard<br/>[dist_installer/Cheat Clip PRO Setup 1.2.0.exe]"]
     end
 ```
 
 ---
 
-## 🚀 3. Langkah Demi Langkah Eksekusi Build
+## 🧹 3. Prosedur Wajib: Pembersihan File Sampah (Anti Tumpuk-Menumpuk)
 
-### Langkah 1: Clone Repository & Buka Folder Project
-Buka terminal (PowerShell atau Command Prompt) dan clone repository resmi:
+> [!CAUTION]
+> **PENTING: Jangan melewati langkah pembersihan ini!**  
+> Masalah backend tidak terbuka, binary tertimpa stub corrupt 534 KB (`MZP`), port terkunci, atau crash `0x0eedfade` terjadi karena proses lama masih berjalan di latar belakang dan file kompilasi sebelumnya tumpuk-menumpuk.
+
+Sebelum memulai build baru, jalankan pembersihan menyeluruh berikut di PowerShell:
+
 ```powershell
-git clone https://github.com/Bayunity-Brkhstd/clip.git cheat-clip-pro
-cd cheat-clip-pro
+# 1. Hentikan seluruh proses backend & aplikasi yang sedang berjalan
+Get-CimInstance Win32_Process -Filter "Name like '%cheat%' or Name like '%gcheat%' or Name like '%uvicorn%'" | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }
+
+# 2. Hapus seluruh trash file & folder dist dari build sebelumnya
+Remove-Item -Recurse -Force "dist" -ErrorAction SilentlyContinue
+Remove-Item -Recurse -Force "dist_backend" -ErrorAction SilentlyContinue
+Remove-Item -Recurse -Force "build_pyinstaller" -ErrorAction SilentlyContinue
+Remove-Item -Recurse -Force "dist_installer" -ErrorAction SilentlyContinue
 ```
 
 ---
 
-### Langkah 2: Instalasi Dependensi Frontend (Node.js)
-Install seluruh library antarmuka pengguna:
-```powershell
-npm install
-```
-> [!NOTE]
-> Dependensi utama mencakup React 19, Lucide React, MP4-Muxer, Vite, Electron, dan Electron-Builder.
+## 🚀 4. Langkah Demi Langkah Eksekusi Build
 
----
-
-### Langkah 3: Setup Virtual Environment & Dependensi Backend (Python)
-Sangat disarankan menggunakan virtual environment tersendiri agar library tidak konflik dengan instalasi Python global:
+### Langkah 1: Setup Virtual Environment & Install Dependensi Backend (Python)
+Gunakan virtual environment Python 64-bit yang terisolasi:
 
 1. **Buat Virtual Environment:**
    ```powershell
+   py -3.14 -m venv venv
+   # atau jika menggunakan python bawaan:
    python -m venv venv
    ```
 
-2. **Aktifkan Virtual Environment:**
-   - **PowerShell**:
-     ```powershell
-     .\venv\Scripts\Activate.ps1
-     ```
-     *(Jika muncul script execution policy error, jalankan: `Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass` lalu ulangi).*
-   - **Command Prompt (CMD)**:
-     ```cmd
-     venv\Scripts\activate.bat
-     ```
-
-3. **Upgrade Pip & Install Dependensi Backend:**
+2. **Upgrade Pip & Install Dependensi Backend:**
    ```powershell
-   python -m pip install --upgrade pip
-   pip install -r backend/requirements.txt
+   .\venv\Scripts\python.exe -m pip install --upgrade pip
+   .\venv\Scripts\pip.exe install -r backend/requirements.txt
    ```
 
-4. **Install PyInstaller:**
+3. **Pastikan PyInstaller Terpasang Bersih:**
    ```powershell
-   pip install pyinstaller>=6.10.0
+   .\venv\Scripts\pip.exe install --force-reinstall pyinstaller
    ```
+   > [!TIP]
+   > Memastikan bootloader PyInstaller di `venv\Lib\site-packages\PyInstaller\bootloader\Windows-64bit-intel\run.exe` adalah binary 64-bit asli (berukuran ~311 KB dengan header `MZ`), bukan file 534 KB stub yang corrupt.
 
 ---
 
-### Langkah 4: Kompilasi Frontend ke Production Bundle (`dist/`)
-Kompilasi kode TypeScript dan stylesheet Blue Neon menjadi aset web statis teroptimasi:
-```powershell
-npm run electron:build:frontend
-```
-*Atau setara dengan:*
-```powershell
-npm run build
-```
-✅ **Hasil**: Folder `dist/` tercipta berisi `index.html`, folder `assets/` (file JS, CSS ter-minify), serta icon SVG/ICO.
+### Langkah 2: Setup Dependensi Frontend & Electron
+Install paket NPM dan pastikan binary resmi Electron telah terunduh:
 
----
-
-### Langkah 5: Kompilasi Backend Python via PyInstaller (`dist_backend/`)
-Bundle seluruh engine FastAPI, model Whisper, cascade face-tracking OpenCV, dan font pack ke folder binary mandiri:
 ```powershell
-python -m PyInstaller cheat-clip-backend.spec --distpath dist_backend --workpath build_pyinstaller -y
-```
-*Atau setara dengan:*
-```powershell
-npm run electron:build:backend
+npm.cmd install
 ```
 
-> [!IMPORTANT]
-> Proses ini memakan waktu sekitar **2 hingga 5 menit** tergantung kecepatan CPU dan SSD Anda. PyInstaller akan memproses ribuan dependensi C++ / DLL dari PyTorch, Whisper, dan OpenCV.
-
-✅ **Hasil Verifikasi**:
-Pastikan file executable backend telah terbentuk di:
+Verifikasi bahwa executable resmi Electron berada di `node_modules\electron\dist\electron.exe` (berukuran ~249 MB). Jika belum ada, jalankan:
 ```powershell
-Test-Path "dist_backend/cheat-clip-backend/cheat-clip-backend.exe"
-# Harus bernilai True
+node node_modules\electron\install.js
 ```
 
 ---
 
-### Langkah 6: Packaging NSIS Desktop Installer via Electron Builder
-Gabungkan runtime Electron, bundle frontend di `dist/`, dan backend executable di `dist_backend/` menjadi installer wizard:
+### Langkah 3: Kompilasi Frontend ke Production Bundle (`dist/`)
+Kompilasi kode React 19 + TypeScript dan Vite ke file statis:
+
 ```powershell
-npm run electron:dist
+npm.cmd run build
+```
+✅ **Hasil**: Folder `dist/` terbentuk berisi `index.html`, icon, dan folder `assets/` (`index-*.js` dan `index-*.css`).
+
+---
+
+### Langkah 4: Kompilasi Backend Python via PyInstaller (`dist_backend/`)
+Kompilasi engine FastAPI, yt-dlp, FFmpeg path resolver, PyTorch, Whisper, dan OpenCV menjadi folder binary mandiri:
+
+```powershell
+.\venv\Scripts\python.exe -m PyInstaller --noconfirm --clean --onedir --name "cheat-clip-backend" --add-data "backend;backend" --hidden-import "uvicorn" --hidden-import "uvicorn.logging" --hidden-import "uvicorn.loops" --hidden-import "uvicorn.loops.auto" --hidden-import "uvicorn.protocols" --hidden-import "uvicorn.protocols.http" --hidden-import "uvicorn.protocols.http.auto" --hidden-import "uvicorn.lifespan" --hidden-import "uvicorn.lifespan.on" --hidden-import "backend.main" --hidden-import "backend.video_engine" --distpath "./dist_backend" --workpath "./build_pyinstaller" "backend/main.py"
 ```
 
 > [!NOTE]
-> `electron-builder` akan:
-> 1. Memaketkan kode UI dan Node runtime ke dalam `resources/app.asar`.
-> 2. Menyalin `dist/` ke `resources/dist/`.
-> 3. Menyalin binary backend ke `resources/backend/cheat-clip-backend/`.
-> 4. Mengemas seluruhnya ke dalam NSIS Setup Installer `.exe`.
+> Proses ini memakan waktu **2 hingga 4 menit**. PyInstaller akan mengumpulkan ribuan modul pendukung ke `dist_backend/cheat-clip-backend/`.
+
+✅ **Verifikasi Output Backend**:
+Pastikan executable backend telah terbentuk:
+```powershell
+Get-Item "dist_backend\cheat-clip-backend\cheat-clip-backend.exe"
+# Ukuran file harus ~58 MB (binary 64-bit lengkap)
+```
+
+---
+
+### Langkah 5: Packaging Standalone NSIS Installer via Electron Builder
+Kemas runtime Electron, bundle frontend `dist/`, dan binary backend `dist_backend/`:
+
+```powershell
+npm.cmd run electron:dist
+```
 
 ✅ **Hasil Akhir**:
-File installer siap pakai akan terbentuk di folder `dist_installer/`:
-- `dist_installer\Cheat Clip PRO Setup 1.1.0.exe` (Ukuran ~330 MB - 350 MB).
+File installer final akan tersedia di folder `dist_installer/`:
+- **Installer Wizard Windows**: [`dist_installer\Cheat Clip PRO Setup 1.2.0.exe`](file:///c:/Users/home/Pictures/New%20folder/clip-main/clip-main/dist_installer/Cheat%20Clip%20PRO%20Setup%201.2.0.exe) (~344 MB).
+- **Portable Unpacked Directory**: [`dist_installer\win-unpacked\Cheat Clip PRO.exe`](file:///c:/Users/home/Pictures/New%20folder/clip-main/clip-main/dist_installer/win-unpacked/Cheat%20Clip%20PRO.exe).
 
 ---
 
-## ⚡ 4. Cara Cepat: One-Click Automated Build
+## ⚡ 5. Cara Cepat: Script Otomatis Sekali Klik
 
-Jika semua dependensi (Node.js & Python di virtual environment) sudah terpasang, Anda cukup menjalankan satu perintah otomatis yang mengeksekusi ketiga tahap di atas secara sekuensial:
+Untuk menghindari kesalahan manual dan tumpukan file lama, gunakan skrip berikut di PowerShell:
 
-### Opsi A: Melalui Script Batch Windows
-Jalankan file batch yang sudah disediakan di root folder:
 ```powershell
-.\build-desktop.bat
-```
+# 1. Bersihkan proses & cache lama
+Get-CimInstance Win32_Process -Filter "Name like '%cheat%' or Name like '%uvicorn%'" | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }
+Remove-Item -Recurse -Force dist, dist_backend, build_pyinstaller, dist_installer -ErrorAction SilentlyContinue
 
-### Opsi B: Melalui NPM Script
-```powershell
-npm run build:desktop
-```
+# 2. Build Frontend
+npm.cmd run build
 
----
+# 3. Build Backend
+.\venv\Scripts\python.exe -m PyInstaller --noconfirm --clean --onedir --name "cheat-clip-backend" --add-data "backend;backend" --hidden-import "uvicorn" --hidden-import "backend.main" --hidden-import "backend.video_engine" --distpath "./dist_backend" --workpath "./build_pyinstaller" "backend/main.py"
 
-## 🛡️ 5. Aturan Teknis Krusial (Guardrails Kompilasi)
-
-Saat memodifikasi atau membangun installer ini, wajib mematuhi aturan arsitektur berikut (berdasarkan standar [`AGENTS.md`](./AGENTS.md)):
-
-1. **Resolusi Path SPA di `backend/main.py` (`sys.frozen`)**:
-   Dalam mode PyInstaller (`getattr(sys, "frozen", False)`), folder `dist` berada di `_internal/dist` atau `resources/dist`. Gunakan algoritma pencarian multi-kandidat:
-   ```python
-   exe_dir = Path(sys.executable).parent
-   meipass = Path(getattr(sys, "_MEIPASS", exe_dir))
-   candidates = [
-       meipass / "dist",
-       exe_dir / "dist",
-       exe_dir / "_internal" / "dist",
-       exe_dir.parent / "dist",
-       exe_dir.parent.parent / "dist",
-       exe_dir.parent.parent.parent / "dist",
-   ]
-   dist_dir = next((c for c in candidates if c.exists() and (c / "index.html").exists()), exe_dir / "dist")
-   ```
-
-2. **Dilarang Menjalankan `reload=True` di PyInstaller**:
-   Di dalam executable frozen, Uvicorn wajib dijalankan dengan `reload=False`:
-   ```python
-   if getattr(sys, "frozen", False):
-       uvicorn.run(app, host=host, port=port, reload=False)
-   else:
-       uvicorn.run("backend.main:app", host=host, port=port, reload=True)
-   ```
-
-3. **Pembersihan Cache Chromium di `electron/main.cjs`**:
-   Untuk mencegah Chromium me-load cache halaman lama pada saat upgrade versi, panggil pembersihan session cache saat startup:
-   ```javascript
-   await mainWindow.webContents.session.clearCache();
-   ```
-
-4. **Jangan Mengecualikan `unittest` di PyInstaller**:
-   PyTorch dan Whisper membutuhkan modul internal `unittest`. Jangan pernah menambahkan `'unittest'` ke dalam list `excludes` pada `cheat-clip-backend.spec`.
-
-5. **Pertahankan yt-dlp CLI Interceptor di Baris Teratas `main.py`**:
-   Baris 1–6 di `backend/main.py` wajib mempertahankan interceptor `sys.argv[1:]` agar pemanggilan `yt-dlp` dari subprocess tidak memicu instansiasi server FastAPI ganda.
-
-6. **Git Ignore untuk Folder Build**:
-   Pastikan folder binary `build_pyinstaller/`, `dist_backend/`, dan `dist_installer/` tetap berada di dalam `.gitignore` agar tidak di-push ke GitHub (mencegah error batas ukuran file GitHub 100MB).
-
----
-
-## ❓ 6. Troubleshooting & FAQ
-
-### Q1: Tampilan UI di aplikasi setelah diinstal masih memunculkan tema lama / tombol lama?
-**Solusi**:
-1. Hapus cache lokal Chromium Electron di komputer pengguna:
-   ```powershell
-   Remove-Item -Path "$env:APPDATA\cheat-clip-pro\Cache" -Recurse -Force -ErrorAction SilentlyContinue
-   Remove-Item -Path "$env:APPDATA\cheat-clip-pro\Code Cache" -Recurse -Force -ErrorAction SilentlyContinue
-   Remove-Item -Path "$env:APPDATA\cheat-clip-pro\GPUCache" -Recurse -Force -ErrorAction SilentlyContinue
-   ```
-2. Pastikan Anda menjalankan `npm run build` dan `python -m PyInstaller ...` sebelum menjalankan `npm run electron:dist` agar bundle `dist` yang baru benar-benar masuk ke dalam installer.
-
-### Q2: Error `ModuleNotFoundError` saat backend dijalankan?
-**Solusi**:
-Pastikan module yang hilang telah didaftarkan ke dalam array `hidden_imports` di [`cheat-clip-backend.spec`](file:///d:/berjan/cheat-clip-pro-master/cheat-clip-backend.spec), misalnya `'backend.services.key_rotator'`.
-
-### Q3: Error `Port 8000 already in use` saat Electron membuka backend?
-**Solusi**:
-Tutup instansi Cheat Clip PRO atau proses uvicorn yang masih tertinggal di background:
-```powershell
-Get-Process -Name "*cheat*", "*uvicorn*" -ErrorAction SilentlyContinue | Stop-Process -Force
+# 4. Build Installer
+npm.cmd run electron:dist
 ```
 
 ---
 
-## 📦 7. Hasil Build yang Dihasilkan
+## 🛡️ 6. Aturan Teknis Krusial (Guardrails Kompilasi)
 
-Setelah semua langkah berhasil, file distribusi siap dibagikan kepada pengguna:
+1. **Spawn Backend di Electron (`electron/main.cjs`)**:
+   Jangan menggunakan `cmd.exe /c start` dengan argumen yang tidak di-quote karena spasi pada nama folder path (seperti `New folder`) akan menyebabkan Windows mencari file terpotong (`Windows cannot find 'Cheat'`). Gunakan `spawn(exePath, ['--port', String(BACKEND_PORT)])` langsung.
+2. **FFmpeg Discovery di `backend/video_engine.py`**:
+   Selalu pastikan `video_engine.py` mengecualikan direktori FFmpeg yang rusak (misalnya dummy binary 500 KB di `c:\ffmpeg\bin`) dan mengarahkan yt-dlp secara eksplisit (`--ffmpeg-location`) ke build lengkap Gyan / yt-dlp full FFmpeg yang memiliki filter subtitles / `libass`.
+3. **Uvicorn Arguments**:
+   Pastikan `backend/main.py` mendukung parsing parameter CLI `--port` dan `--host` agar port dinamis yang dikirim Electron diterima dengan benar.
+4. **Git Ignore untuk Binary**:
+   Folder `dist/`, `dist_backend/`, `build_pyinstaller/`, dan `dist_installer/` wajib ada di `.gitignore` untuk mencegah batas ukuran file GitHub (100 MB).
 
-| Target File | Lokasi File | Deskripsi |
-| :--- | :--- | :--- |
-| **Windows NSIS Installer** | `dist_installer/Cheat Clip PRO Setup 1.1.0.exe` | Wizard installer resmi Windows (desktop & start menu shortcut) |
-| **Unpacked Directory** | `dist_installer/win-unpacked/Cheat Clip PRO.exe` | Versi portable tanpa instalasi (untuk debugging cepat) |
-| **Backend Standalone Binary** | `dist_backend/cheat-clip-backend/cheat-clip-backend.exe` | Server backend mandiri tanpa runtime Python terpisah |
+---
 
+## ❓ 7. Troubleshooting Masalah Umum
+
+### Q1: Muncul pop-up error tanda silang merah dengan tombol "OK" kosong saat aplikasi dibuka?
+- **Penyebab**: File template bootloader PyInstaller `run.exe` di environment corrupt atau tertimpa program 32-bit luar.
+- **Solusi**:
+  1. Hentikan semua proses: `Get-Process -Name "*cheat*" | Stop-Process -Force`.
+  2. Install ulang PyInstaller: `.\venv\Scripts\pip.exe install --force-reinstall pyinstaller`.
+  3. Hapus folder `dist_backend/` dan `build_pyinstaller/`, lalu kompilasi ulang backend.
+
+### Q2: Download slicing YouTube macet di 15%?
+- **Penyebab**: Binary FFmpeg yang dideteksi yt-dlp tidak valid sehingga `--download-sections` gagal.
+- **Solusi**: Pastikan Gyan FFmpeg atau yt-dlp FFmpeg terpasang via winget (`winget install Gyan.FFmpeg`) dan backend otomatis mengarahkannya lewat `--ffmpeg-location`.
+
+### Q3: Error "Windows cannot find 'Cheat'" saat membuka aplikasi?
+- **Penyebab**: Perintah `start` di CMD memotong spasi pada path direktori program.
+- **Solusi**: Pastikan menggunakan spawn langsung di `electron/main.cjs` tanpa perantara `cmd.exe /c start "" "..."`.
