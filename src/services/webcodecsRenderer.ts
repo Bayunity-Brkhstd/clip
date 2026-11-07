@@ -7,6 +7,7 @@ export interface WebCodecsRenderOptions {
   aspectRatio: '9:16' | '1:1' | '16:9' | '4:5' | '4:3';
   backgroundStyle: 'blur' | 'black' | 'fit' | 'crop';
   titleText?: string;
+  subtitles?: Array<{ start: number; end: number; text: string }>;
   fileName?: string;
   onProgress?: (percent: number, stage: string) => void;
 }
@@ -65,6 +66,7 @@ export async function renderClipWebCodecs(options: WebCodecsRenderOptions): Prom
     endTime,
     aspectRatio = '9:16',
     backgroundStyle = 'blur',
+    subtitles,
     onProgress
   } = options;
 
@@ -220,6 +222,29 @@ export async function renderClipWebCodecs(options: WebCodecsRenderOptions): Prom
     const fgX = (targetWidth - fgW) / 2;
     const fgY = (targetHeight - fgH) / 2;
     ctx.drawImage(video, fgX, fgY, fgW, fgH);
+
+    // Render Subtitle Overlay if active
+    if (subtitles && subtitles.length > 0) {
+      const relFrameTime = currentSec - startTime;
+      const activeSub = subtitles.find(s => relFrameTime >= s.start && relFrameTime <= s.end);
+      if (activeSub && activeSub.text) {
+        ctx.save();
+        const subFontSize = Math.max(24, Math.round(targetHeight * 0.042));
+        ctx.font = `800 ${subFontSize}px 'Outfit', sans-serif`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'bottom';
+        ctx.shadowColor = 'rgba(0, 0, 0, 0.95)';
+        ctx.shadowBlur = 8;
+        ctx.lineWidth = Math.max(4, Math.round(subFontSize * 0.12));
+        ctx.strokeStyle = '#000000';
+        const subY = targetHeight * 0.86;
+        const textUpper = activeSub.text.toUpperCase();
+        ctx.strokeText(textUpper, targetWidth / 2, subY);
+        ctx.fillStyle = '#FFE600';
+        ctx.fillText(textUpper, targetWidth / 2, subY);
+        ctx.restore();
+      }
+    }
 
     // Create VideoFrame from Canvas
     const timestampUs = Math.round(frameIndex * (1_000_000 / fps));

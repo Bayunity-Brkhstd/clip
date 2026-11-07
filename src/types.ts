@@ -11,6 +11,16 @@ export interface TranscriptLine {
   engagement?: number;
 }
 
+export interface SubtitleCue {
+  id: string;
+  originalStart: number;
+  originalEnd: number;
+  start: number;
+  end: number;
+  text: string;
+  isEdited?: boolean;
+}
+
 export interface ViralClip {
   title: string;
   start_time: number;
@@ -22,6 +32,7 @@ export interface ViralClip {
   title_suggestion?: string;
   caption_suggestion?: string;
   hashtag_suggestion?: string;
+  custom_cues?: SubtitleCue[];
 }
 
 export interface AnalyzeResponse {
@@ -152,6 +163,8 @@ export interface RenderSettings {
   // Multi-Segment Merged Highlight Video
   renderMode?: 'separate' | 'merged';
   compilationTitle?: string;
+  // Custom Edited Subtitle Cues
+  customCues?: SubtitleCue[];
 }
 
 export interface RenderClipStatus {

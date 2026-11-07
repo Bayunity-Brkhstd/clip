@@ -17,6 +17,8 @@ export const en = {
     confirmModalCookieNotice: "Stored YouTube cookies are SAFE and will NEVER be deleted.",
     updateBtn: "Update",
     updateBtnTooltip: "Check for updates and view version status",
+    creditBtn: "Credit",
+    creditBtnTooltip: "View acknowledgments & credits (credit.md)",
   },
   form: {
     sourceType: "Input Source",

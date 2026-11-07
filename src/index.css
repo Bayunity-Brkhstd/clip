@@ -29,3 +29,7 @@
 
 /* Modals & Precision Tools */
 @import "./styles/trimmer-modal.css";
+
+/* Tab 03 — Time-Aligned Subtitle Cue Editor */
+@import "./styles/subtitle-cue-editor.css";
+

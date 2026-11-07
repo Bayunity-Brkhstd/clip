@@ -6,6 +6,7 @@ import { CookiesModal } from './components/CookiesModal';
 import { CookieWarningModal } from './components/CookieWarningModal';
 import { ClipTrimmerModal } from './components/ClipTrimmerModal';
 import { AppUpdateModal } from './components/AppUpdateModal';
+import { CreditModal } from './components/CreditModal';
 import { resilientFetch } from './utils/api';
 import { getStoredCookies, hasStoredCookies } from './utils/cookieUtils';
 import { extractAudioFromVideoClient } from './utils/audioExtractor';
@@ -40,7 +41,8 @@ import {
   ChevronRight,
   FileVideo,
   Film,
-  Scissors
+  Scissors,
+  Award
 } from 'lucide-react';
 import type { AnalyzeResponse, ViralClip, RenderSettings, BatchRenderProgress } from './types';
 
@@ -109,6 +111,7 @@ export default function App() {
   const [isCustomOpenRouterModel, setIsCustomOpenRouterModel] = useState<boolean>(false);
   const [isCookiesModalOpen, setIsCookiesModalOpen] = useState(false);
   const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
+  const [isCreditModalOpen, setIsCreditModalOpen] = useState(false);
   const [allowAppUpdates, setAllowAppUpdates] = useState<boolean>(() => {
     if (typeof window !== 'undefined') {
       const host = window.location.hostname;
@@ -542,6 +545,10 @@ export default function App() {
           let blob: Blob;
           const useWebCodecsGpu = (settings.hardwareAccel === 'client_gpu' || (!settings.hardwareAccel && isWebCodecsGpuSupported())) && isWebCodecsGpuSupported();
 
+          const clipSubtitles = clip.custom_cues
+            ? clip.custom_cues.map((c: any) => ({ start: c.start, end: c.end, text: c.text }))
+            : undefined;
+
           if (useWebCodecsGpu) {
             try {
               blob = await renderClipWebCodecs({
@@ -551,6 +558,7 @@ export default function App() {
                 aspectRatio: settings.aspectRatio as any,
                 backgroundStyle: settings.backgroundStyle as any,
                 titleText: settings.titleText,
+                subtitles: clipSubtitles,
                 fileName: `${filename}.mp4`,
                 onProgress: (pct, stage) => {
                   setBatchProgress(prev => {
@@ -577,6 +585,7 @@ export default function App() {
                 aspectRatio: settings.aspectRatio as any,
                 backgroundStyle: settings.backgroundStyle as any,
                 titleText: settings.titleText,
+                subtitles: clipSubtitles,
                 fileName: `${filename}.mp4`,
                 onProgress: (pct, stage) => {
                   setBatchProgress(prev => {
@@ -602,6 +611,7 @@ export default function App() {
               aspectRatio: settings.aspectRatio as any,
               backgroundStyle: settings.backgroundStyle as any,
               titleText: settings.titleText,
+              subtitles: clipSubtitles,
               fileName: `${filename}.mp4`,
               onProgress: (pct, stage) => {
                 setBatchProgress(prev => {
@@ -2833,6 +2843,16 @@ Transcript:
                   </span>
                 </button>
               )}
+              <button
+                type="button"
+                className="header-nav-btn"
+                onClick={() => setIsCreditModalOpen(true)}
+                title={t.header.creditBtnTooltip || "Lihat Penghargaan & Kredit (credit.md)"}
+              >
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}>
+                  <Award size={13} style={{ color: '#fbbf24' }} /> {t.header.creditBtn || 'Credit'}
+                </span>
+              </button>
               <LanguageSwitcher />
 
             </div>
@@ -5970,6 +5990,7 @@ Transcript:
               allClips={result.clips}
               markedClips={markedClipsList}
               activeClip={activeClip}
+              fullTranscript={result.transcript}
               onStartRender={handleStartBatchRender}
               isRendering={isLaunchingRender}
               onToggleMarkClip={(clip) => toggleMarkedClip(`${clip.start_time}_${clip.end_time}`)}
@@ -6143,6 +6164,12 @@ Transcript:
         <AppUpdateModal
           isOpen={isUpdateModalOpen}
           onClose={() => setIsUpdateModalOpen(false)}
+        />
+
+        {/* Developer Credit & Tribute Modal */}
+        <CreditModal
+          isOpen={isCreditModalOpen}
+          onClose={() => setIsCreditModalOpen(false)}
         />
 
         {/* Gemini Multi-Key Rolling Manager Modal (Max 10) */}

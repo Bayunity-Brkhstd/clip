@@ -20,8 +20,12 @@ import { getStoredCookies, hasStoredCookies } from '../utils/cookieUtils';
 import { detectFaceClientSide } from '../utils/clientFaceDetector';
 import { isMobileDevice } from '../utils/deviceUtils';
 import { isWebCodecsGpuSupported, getClientGpuName } from '../services/webcodecsRenderer';
+import { SubtitleCueEditor } from './SubtitleCueEditor';
+import { sliceTranscriptForClip } from '../utils/subtitleUtils';
 import type {
   ViralClip,
+  SubtitleCue,
+  TranscriptLine,
   RenderSettings,
   AspectRatioOption,
   BackgroundStyle,
@@ -46,6 +50,7 @@ interface ClipStudioSectionProps {
   allClips: ViralClip[];
   markedClips: ViralClip[];
   activeClip: ViralClip | null;
+  fullTranscript?: TranscriptLine[];
   onStartRender: (settings: RenderSettings) => void;
   isRendering: boolean;
   onToggleMarkClip?: (clip: ViralClip) => void;
@@ -288,6 +293,7 @@ export const ClipStudioSection: React.FC<ClipStudioSectionProps> = ({
   allClips,
   markedClips,
   activeClip,
+  fullTranscript,
   onStartRender,
   isRendering,
   onToggleMarkClip,
@@ -325,6 +331,7 @@ export const ClipStudioSection: React.FC<ClipStudioSectionProps> = ({
   const [titlePrefix, setTitlePrefix] = useState<string>(() => getSavedStudioPreferences().titlePrefix ?? DEFAULT_STUDIO_PREFS.titlePrefix);
   const [titleSuffix, setTitleSuffix] = useState<string>(() => getSavedStudioPreferences().titleSuffix ?? DEFAULT_STUDIO_PREFS.titleSuffix);
   const [customClipTitles, setCustomClipTitles] = useState<Record<string, string>>({});
+  const [customClipCues, setCustomClipCues] = useState<Record<string, SubtitleCue[]>>({});
   const [titlePosition, setTitlePosition] = useState<TitlePosition>(() => getSavedStudioPreferences().titlePosition ?? DEFAULT_STUDIO_PREFS.titlePosition);
   const [captionStyle, setCaptionStyle] = useState<CaptionStyle>(() => getSavedStudioPreferences().captionStyle ?? DEFAULT_STUDIO_PREFS.captionStyle);
   const [lastActiveCaptionStyle, setLastActiveCaptionStyle] = useState<CaptionStyle>(() => {
@@ -1434,6 +1441,31 @@ export const ClipStudioSection: React.FC<ClipStudioSectionProps> = ({
   const currentClipKey = currentPreviewClip ? `${currentPreviewClip.start_time}_${currentPreviewClip.end_time}` : '';
   const currentCustomTitle = currentClipKey ? customClipTitles[currentClipKey] : undefined;
 
+  const currentCues: SubtitleCue[] = useMemo(() => {
+    if (!currentPreviewClip) return [];
+    if (customClipCues[currentClipKey]) {
+      return customClipCues[currentClipKey];
+    }
+    return sliceTranscriptForClip(currentPreviewClip, fullTranscript);
+  }, [currentClipKey, customClipCues, currentPreviewClip, fullTranscript]);
+
+  const handleUpdateCurrentCues = (newCues: SubtitleCue[]) => {
+    if (!currentClipKey) return;
+    setCustomClipCues(prev => ({
+      ...prev,
+      [currentClipKey]: newCues
+    }));
+  };
+
+  const handleResetCurrentCues = () => {
+    if (!currentPreviewClip || !currentClipKey) return;
+    const original = sliceTranscriptForClip({ ...currentPreviewClip, custom_cues: undefined }, fullTranscript);
+    setCustomClipCues(prev => ({
+      ...prev,
+      [currentClipKey]: original
+    }));
+  };
+
   const baseClipHookTitle = (
     currentCustomTitle !== undefined && currentCustomTitle.trim() !== ''
       ? currentCustomTitle
@@ -1606,11 +1638,13 @@ export const ClipStudioSection: React.FC<ClipStudioSectionProps> = ({
       const key = `${c.start_time}_${c.end_time}`;
       const custom = customClipTitles[key];
       const effectiveTitle = (custom !== undefined && custom.trim()) ? custom.trim() : (c.title_suggestion || c.title);
+      const effectiveCues = customClipCues[key] || sliceTranscriptForClip(c, fullTranscript);
       return {
         ...c,
         title: effectiveTitle,
         title_suggestion: effectiveTitle,
         custom_title: effectiveTitle,
+        custom_cues: effectiveCues,
       };
     });
 
@@ -1631,6 +1665,7 @@ export const ClipStudioSection: React.FC<ClipStudioSectionProps> = ({
       titleFontSize,
       titleFontSizePx,
       titleTextCase,
+      customCues: currentCues,
       subtitlesEnabled: captionStyle !== 'none',
       captionStyle,
       captionFont,
@@ -2905,6 +2940,17 @@ export const ClipStudioSection: React.FC<ClipStudioSectionProps> = ({
                     </div>
                   </div>
                 )}
+
+                {/* 5. Subtitle Cue Editor with Time-Aligned Sync */}
+                <SubtitleCueEditor
+                  cues={currentCues}
+                  currentTime={currentTime}
+                  clipStartTime={clipStart}
+                  clipEndTime={clipEnd}
+                  onChangeCues={handleUpdateCurrentCues}
+                  onSeekToTime={handleSeek}
+                  onResetToOriginal={handleResetCurrentCues}
+                />
               </>
             )}
           </div>
@@ -4382,47 +4428,100 @@ export const ClipStudioSection: React.FC<ClipStudioSectionProps> = ({
                         display: 'inline-block',
                       }}
                     >
-                      {captionStyle === 'viral_pop' && (
-                        <>
-                          <span style={{ color: '#ffffff' }}>{applyLetterCase('VIRAL', textCase)}</span>{' '}
-                          <span style={{ color: '#FFE600' }}>{applyLetterCase('POP', textCase)}</span>
-                        </>
-                      )}
-                      {captionStyle === 'beast_punch' && (
-                        <>
-                          <span style={{ color: '#ffffff' }}>{applyLetterCase('UNREAL', textCase)}</span>{' '}
-                          <span style={{ color: '#00FF66' }}>{applyLetterCase('HACK', textCase)}</span>
-                        </>
-                      )}
-                      {captionStyle === 'cyber_violet' && (
-                        <>
-                          <span style={{ color: '#ffffff' }}>{applyLetterCase('CYBER', textCase)}</span>{' '}
-                          <span style={{ color: '#D946EF' }}>{applyLetterCase('PUNCH', textCase)}</span>
-                        </>
-                      )}
-                      {captionStyle === 'fire_red' && (
-                        <>
-                          <span style={{ color: '#ffffff' }}>{applyLetterCase('HOT', textCase)}</span>{' '}
-                          <span style={{ color: '#FF2E2E' }}>{applyLetterCase('FIRE', textCase)}</span>
-                        </>
-                      )}
-                      {captionStyle === 'electric_cyan' && (
-                        <>
-                          <span style={{ color: '#ffffff' }}>{applyLetterCase('ELECTRIC', textCase)}</span>{' '}
-                          <span style={{ color: '#00F0FF' }}>{applyLetterCase('CYAN', textCase)}</span>
-                        </>
-                      )}
-                      {captionStyle === 'golden_aura' && (
-                        <>
-                          <span style={{ color: '#ffffff' }}>{applyLetterCase('GOLDEN', textCase)}</span>{' '}
-                          <span style={{ color: '#FFB800' }}>{applyLetterCase('MOMENT', textCase)}</span>
-                        </>
-                      )}
-                      {captionStyle === 'clean_minimal' && (
-                        <span style={{ color: '#ffffff' }}>
-                          {applyLetterCase('CLEAN SUBTITLE', textCase)}
-                        </span>
-                      )}
+                      {(() => {
+                        const relTimeInClip = Math.max(0, currentTime - clipStart);
+                        const currentActiveCue = currentCues.find(cue => relTimeInClip >= cue.start && relTimeInClip <= cue.end);
+                        const activeCaptionText = currentActiveCue
+                          ? currentActiveCue.text
+                          : (relTimeInClip <= 0.5 && currentCues.length > 0 ? currentCues[0].text : '');
+
+                        if (activeCaptionText) {
+                          const words = activeCaptionText.trim().split(/\s+/);
+                          if (captionStyle === 'clean_minimal' || words.length <= 1) {
+                            const color = captionStyle === 'viral_pop' ? '#FFE600'
+                              : captionStyle === 'beast_punch' ? '#00FF66'
+                              : captionStyle === 'cyber_violet' ? '#D946EF'
+                              : captionStyle === 'fire_red' ? '#FF2E2E'
+                              : captionStyle === 'electric_cyan' ? '#00F0FF'
+                              : captionStyle === 'golden_aura' ? '#FFB800'
+                              : '#ffffff';
+                            return (
+                              <span style={{ color }}>
+                                {applyLetterCase(activeCaptionText, textCase)}
+                              </span>
+                            );
+                          }
+                          const normalWords = words.slice(0, words.length - 1).join(' ');
+                          const punchWord = words[words.length - 1];
+                          const punchColor = captionStyle === 'viral_pop' ? '#FFE600'
+                            : captionStyle === 'beast_punch' ? '#00FF66'
+                            : captionStyle === 'cyber_violet' ? '#D946EF'
+                            : captionStyle === 'fire_red' ? '#FF2E2E'
+                            : captionStyle === 'electric_cyan' ? '#00F0FF'
+                            : captionStyle === 'golden_aura' ? '#FFB800'
+                            : '#ffffff';
+                          return (
+                            <>
+                              <span style={{ color: '#ffffff' }}>{applyLetterCase(normalWords, textCase)}</span>{' '}
+                              <span style={{ color: punchColor }}>{applyLetterCase(punchWord, textCase)}</span>
+                            </>
+                          );
+                        }
+
+                        if (captionStyle === 'viral_pop') {
+                          return (
+                            <>
+                              <span style={{ color: '#ffffff' }}>{applyLetterCase('VIRAL', textCase)}</span>{' '}
+                              <span style={{ color: '#FFE600' }}>{applyLetterCase('POP', textCase)}</span>
+                            </>
+                          );
+                        }
+                        if (captionStyle === 'beast_punch') {
+                          return (
+                            <>
+                              <span style={{ color: '#ffffff' }}>{applyLetterCase('UNREAL', textCase)}</span>{' '}
+                              <span style={{ color: '#00FF66' }}>{applyLetterCase('HACK', textCase)}</span>
+                            </>
+                          );
+                        }
+                        if (captionStyle === 'cyber_violet') {
+                          return (
+                            <>
+                              <span style={{ color: '#ffffff' }}>{applyLetterCase('CYBER', textCase)}</span>{' '}
+                              <span style={{ color: '#D946EF' }}>{applyLetterCase('PUNCH', textCase)}</span>
+                            </>
+                          );
+                        }
+                        if (captionStyle === 'fire_red') {
+                          return (
+                            <>
+                              <span style={{ color: '#ffffff' }}>{applyLetterCase('HOT', textCase)}</span>{' '}
+                              <span style={{ color: '#FF2E2E' }}>{applyLetterCase('FIRE', textCase)}</span>
+                            </>
+                          );
+                        }
+                        if (captionStyle === 'electric_cyan') {
+                          return (
+                            <>
+                              <span style={{ color: '#ffffff' }}>{applyLetterCase('ELECTRIC', textCase)}</span>{' '}
+                              <span style={{ color: '#00F0FF' }}>{applyLetterCase('CYAN', textCase)}</span>
+                            </>
+                          );
+                        }
+                        if (captionStyle === 'golden_aura') {
+                          return (
+                            <>
+                              <span style={{ color: '#ffffff' }}>{applyLetterCase('GOLDEN', textCase)}</span>{' '}
+                              <span style={{ color: '#FFB800' }}>{applyLetterCase('MOMENT', textCase)}</span>
+                            </>
+                          );
+                        }
+                        return (
+                          <span style={{ color: '#ffffff' }}>
+                            {applyLetterCase('CLEAN SUBTITLE', textCase)}
+                          </span>
+                        );
+                      })()}
                     </span>
                   </div>
                 )}

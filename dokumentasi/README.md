@@ -47,7 +47,8 @@ flowchart TD
 | **07** | [`AGENTS.md`](./AGENTS.md) | **SOP Developer & Sistem AI.** Aturan esensial PyInstaller standalone mode (`sys.frozen`), yt-dlp CLI interceptor, resolusi path aset/font, keamanan token, dan styling Vanilla CSS. | **Ketujuh** |
 | **08** | [`installapk.md`](./installapk.md) | **Panduan Build Desktop Installer (.exe).** Panduan teknis kompilasi mandiri: requirement, langkah demi langkah, command PyInstaller & Electron-Builder, serta troubleshooting cache. | **Kedelapan** |
 | **09** | [`antigravity.md`](./antigravity.md) | **Autonomous Agent Engineering Guardrails.** Panduan disiplin modifikasi kode, diff minimalis, closed-loop terminal verification, dan pencegahan loop agent di Google Antigravity IDE. | **Kesembilan** |
-| **10** | [`BRAINSTORMING_DAN_INOVASI.md`](./BRAINSTORMING_DAN_INOVASI.md) | **Inovasi, Riset & Ideasi Masa Depan.** Rencana pengembangan model Vision multimodal Gemini 3.8, auto-caption animasi ala Hormozi/Beast, integrasi auto-post medsos API, arsitektur distributed rendering, dan model bisnis SaaS. | **Paling Terakhir** |
+| **10** | [`credit.md`](./credit.md) | **Ucapan Terima Kasih & Penghargaan.** Apresiasi kepada Sang Pencipta, BRKH Studio, AI Partners, musik pengiring begadang, dan komunitas open-source. | **Apresiasi & Dedikasi** |
+| **11** | [`BRAINSTORMING_DAN_INOVASI.md`](./BRAINSTORMING_DAN_INOVASI.md) | **Inovasi, Riset & Ideasi Masa Depan.** Rencana pengembangan model Vision multimodal Gemini 3.8, auto-caption animasi ala Hormozi/Beast, integrasi auto-post medsos API, arsitektur distributed rendering, dan model bisnis SaaS. | **Paling Terakhir** |
 
 ---
 
@@ -67,5 +68,6 @@ Cheat Clip PRO adalah platform otomasi video clipping bertenaga AI yang dirancan
 
 ## 👥 Tim & Kontributor
 
-- **[Bayunity-Brkhstd](https://github.com/Bayunity-Brkhstd)** — Project Creator & Lead Maintainer
+- **[Galih Juan Saputra](https://github.com/galihjuansaputra/cheat-clip-pro.git)** — Original Repository Creator & Base Project
+- **[Bayunity-Brkhstd](https://github.com/Bayunity-Brkhstd)** — Project Creator & Lead Maintainer (Cheat Clip PRO Evolution)
 - **[Antigravity](https://deepmind.google/)** — AI Autonomous Engineering & Coding Partner (Google DeepMind)

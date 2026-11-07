@@ -157,10 +157,24 @@ app.include_router(cookies_router)
 app.include_router(downloads_router)
 app.include_router(system_router)
 
-# Mount built frontend in production container if dist/ exists
 from pathlib import Path
-from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
+
+@app.get("/credit.md")
+@app.get("/api/credit")
+async def get_credit_file():
+    candidates = [
+        Path(__file__).resolve().parent.parent / "credit.md",
+        Path(__file__).resolve().parent.parent / "dokumentasi" / "credit.md",
+        Path(__file__).resolve().parent.parent / "public" / "credit.md",
+    ]
+    for c in candidates:
+        if c.exists() and c.is_file():
+            return FileResponse(c, media_type="text/markdown; charset=utf-8")
+    return {"message": "credit.md not found"}
+
+# Mount built frontend in production container if dist/ exists
+from fastapi.staticfiles import StaticFiles
 
 if getattr(sys, "frozen", False):
     exe_dir = Path(sys.executable).parent

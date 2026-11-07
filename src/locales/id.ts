@@ -19,6 +19,8 @@ export const id: Translations = {
     confirmModalCookieNotice: "Cookie YouTube tersimpan Anda AMAN dan TIDAK akan pernah terhapus.",
     updateBtn: "Pembaruan",
     updateBtnTooltip: "Periksa pembaruan dan lihat status versi",
+    creditBtn: "Credit",
+    creditBtnTooltip: "Lihat penghargaan & kredit pengembang (credit.md)",
   },
   form: {
     sourceType: "Sumber Input",

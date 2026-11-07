@@ -1,0 +1,364 @@
+/* ==========================================================================
+   CHEAT CLIP PRO - SUBTITLE CUE EDITOR STYLESHEET
+   Cyberpunk Blue Neon Theme with Time-Aligned Audio Cues
+   ========================================================================== */
+
+.subtitle-cue-editor-wrapper {
+  margin-top: 1.25rem;
+  background: radial-gradient(circle at top left, rgba(0, 240, 255, 0.03) 0%, rgba(10, 14, 23, 0.95) 100%);
+  border: 1px solid rgba(0, 240, 255, 0.25);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4), inset 0 0 12px rgba(0, 240, 255, 0.03);
+  border-radius: 10px;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.cue-editor-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid rgba(0, 240, 255, 0.15);
+}
+
+.cue-editor-title-group {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.cue-editor-title {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: #00f0ff;
+  text-transform: uppercase;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.cue-editor-title::before {
+  content: '';
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  background: #00f0ff;
+  border-radius: 50%;
+  box-shadow: 0 0 8px #00f0ff;
+}
+
+.cue-count-badge {
+  background: rgba(0, 240, 255, 0.12);
+  border: 1px solid rgba(0, 240, 255, 0.3);
+  color: #38bdf8;
+  font-size: 0.68rem;
+  font-family: 'JetBrains Mono', monospace;
+  padding: 0.15rem 0.5rem;
+  border-radius: 9999px;
+  font-weight: 600;
+}
+
+.cue-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.cue-btn-action {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #e2e8f0;
+  font-size: 0.72rem;
+  font-family: 'JetBrains Mono', monospace;
+  padding: 0.3rem 0.65rem;
+  border-radius: 6px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  transition: all 0.2s ease;
+}
+
+.cue-btn-action:hover:not(:disabled) {
+  background: rgba(0, 240, 255, 0.15);
+  border-color: #00f0ff;
+  color: #00f0ff;
+  box-shadow: 0 0 10px rgba(0, 240, 255, 0.25);
+}
+
+.cue-btn-action.primary {
+  background: rgba(0, 240, 255, 0.18);
+  border-color: rgba(0, 240, 255, 0.5);
+  color: #00f0ff;
+}
+
+.cue-btn-action.primary:hover:not(:disabled) {
+  background: #00f0ff;
+  color: #050811;
+  font-weight: 700;
+  box-shadow: 0 0 14px rgba(0, 240, 255, 0.5);
+}
+
+.cue-btn-action:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* Quick Notice / Tips */
+.cue-editor-tip {
+  font-size: 0.7rem;
+  color: #94a3b8;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.35rem 0.6rem;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 6px;
+  border-left: 2px solid #00f0ff;
+}
+
+/* Scrollable Cues List */
+.cue-list-container {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  max-height: 380px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-right: 0.4rem;
+  scroll-behavior: smooth;
+}
+
+/* Custom Cyberpunk Scrollbar */
+.cue-list-container::-webkit-scrollbar {
+  width: 5px;
+}
+.cue-list-container::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 4px;
+}
+.cue-list-container::-webkit-scrollbar-thumb {
+  background: rgba(0, 240, 255, 0.3);
+  border-radius: 4px;
+}
+.cue-list-container::-webkit-scrollbar-thumb:hover {
+  background: #00f0ff;
+}
+
+/* Individual Cue Row */
+.cue-row {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  background: rgba(15, 20, 31, 0.75);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  padding: 0.5rem 0.65rem;
+  position: relative;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.cue-row:hover {
+  background: rgba(18, 26, 42, 0.9);
+  border-color: rgba(0, 240, 255, 0.35);
+}
+
+/* Active Highlight State */
+.cue-row.active {
+  background: linear-gradient(90deg, rgba(0, 240, 255, 0.16) 0%, rgba(15, 20, 31, 0.95) 100%);
+  border: 1px solid #00f0ff !important;
+  box-shadow: 0 0 14px rgba(0, 240, 255, 0.38), inset 0 0 8px rgba(0, 240, 255, 0.1);
+  transform: translateX(2px);
+}
+
+.cue-row.active::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 15%;
+  height: 70%;
+  width: 3px;
+  background: #00f0ff;
+  border-radius: 0 2px 2px 0;
+  box-shadow: 0 0 10px #00f0ff;
+}
+
+/* Play/Seek Button */
+.cue-play-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  border: 1px solid rgba(0, 240, 255, 0.3);
+  background: rgba(0, 240, 255, 0.08);
+  color: #00f0ff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: all 0.18s ease;
+  font-size: 0.8rem;
+}
+
+.cue-play-btn:hover {
+  background: #00f0ff;
+  color: #050811;
+  box-shadow: 0 0 10px rgba(0, 240, 255, 0.6);
+  transform: scale(1.05);
+}
+
+.cue-row.active .cue-play-btn {
+  background: #00f0ff;
+  color: #050811;
+  box-shadow: 0 0 10px rgba(0, 240, 255, 0.6);
+}
+
+/* Timecode Badges & Inputs */
+.cue-timecode-box {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  background: rgba(0, 0, 0, 0.45);
+  border: 1px solid rgba(0, 240, 255, 0.2);
+  border-radius: 6px;
+  padding: 0.2rem 0.4rem;
+  flex-shrink: 0;
+}
+
+.cue-time-input {
+  width: 62px;
+  background: transparent;
+  border: none;
+  border-bottom: 1px dashed rgba(56, 189, 248, 0.4);
+  color: #38bdf8;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.72rem;
+  text-align: center;
+  padding: 0.1rem 0;
+  outline: none;
+  transition: border-color 0.2s ease;
+}
+
+.cue-time-input:focus {
+  border-bottom: 1px solid #00f0ff;
+  color: #00f0ff;
+}
+
+.cue-time-sep {
+  color: rgba(255, 255, 255, 0.35);
+  font-size: 0.72rem;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.cue-duration-tag {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.65rem;
+  color: #64748b;
+  flex-shrink: 0;
+  width: 36px;
+  text-align: right;
+}
+
+/* Subtitle Text Input */
+.cue-text-input {
+  flex: 1;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 6px;
+  padding: 0.4rem 0.65rem;
+  color: #f8fafc;
+  font-size: 0.82rem;
+  line-height: 1.4;
+  outline: none;
+  transition: all 0.2s ease;
+  min-width: 140px;
+}
+
+.cue-text-input:focus {
+  border-color: #00f0ff;
+  background: rgba(0, 0, 0, 0.55);
+  box-shadow: 0 0 10px rgba(0, 240, 255, 0.25);
+}
+
+.cue-edited-dot {
+  display: inline-block;
+  width: 5px;
+  height: 5px;
+  background: #fbbf24;
+  border-radius: 50%;
+  margin-left: -0.3rem;
+  margin-right: 0.1rem;
+  box-shadow: 0 0 6px #fbbf24;
+}
+
+/* Tool Buttons (Split, Delete, Insert) */
+.cue-tools-group {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  flex-shrink: 0;
+}
+
+.cue-tool-btn {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #94a3b8;
+  width: 28px;
+  height: 28px;
+  border-radius: 5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 0.75rem;
+  transition: all 0.18s ease;
+}
+
+.cue-tool-btn:hover {
+  background: rgba(255, 255, 255, 0.15);
+  color: #ffffff;
+}
+
+.cue-tool-btn.split:hover {
+  background: rgba(0, 240, 255, 0.15);
+  border-color: #00f0ff;
+  color: #00f0ff;
+}
+
+.cue-tool-btn.delete:hover {
+  background: rgba(239, 68, 68, 0.2);
+  border-color: #ef4444;
+  color: #f87171;
+  box-shadow: 0 0 8px rgba(239, 68, 68, 0.4);
+}
+
+.cue-tool-btn.add:hover {
+  background: rgba(34, 197, 94, 0.2);
+  border-color: #22c55e;
+  color: #4ade80;
+}
+
+/* Empty State */
+.cue-empty-state {
+  text-align: center;
+  padding: 2rem 1rem;
+  background: rgba(0, 0, 0, 0.25);
+  border-radius: 8px;
+  border: 1px dashed rgba(255, 255, 255, 0.15);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.cue-empty-text {
+  font-size: 0.8rem;
+  color: #94a3b8;
+}
+

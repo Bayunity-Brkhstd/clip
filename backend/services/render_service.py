@@ -146,14 +146,33 @@ async def render_single_batch_clip(
         if settings.caption_style != "none" or (display_title and settings.title_position != "none" and not skip_ass_title):
             words = []
             if settings.caption_style != "none":
-                words = await asyncio.to_thread(
-                    transcribe_clip_words,
-                    raw_path,
-                    transcript,
-                    start_t,
-                    end_t,
-                    target_lang
-                )
+                custom_cues = clip.get("custom_cues") or getattr(settings, "custom_cues", None)
+                if custom_cues and isinstance(custom_cues, list) and len(custom_cues) > 0:
+                    logger.info(f"Using {len(custom_cues)} user-edited custom subtitle cues for clip {idx}...")
+                    from backend.video_engine import clean_caption_text
+                    for cue in custom_cues:
+                        c_text = clean_caption_text(cue.get("text", ""))
+                        if not c_text:
+                            continue
+                        c_words = c_text.split()
+                        if not c_words:
+                            continue
+                        c_start = float(cue.get("start", 0.0))
+                        c_end = float(cue.get("end", c_start + 1.0))
+                        w_dur = max(0.08, (c_end - c_start) / len(c_words))
+                        for w_i, w in enumerate(c_words):
+                            w_s = round(c_start + (w_i * w_dur), 2)
+                            w_e = round(w_s + w_dur, 2)
+                            words.append({"word": w, "start": w_s, "end": w_e})
+                else:
+                    words = await asyncio.to_thread(
+                        transcribe_clip_words,
+                        raw_path,
+                        transcript,
+                        start_t,
+                        end_t,
+                        target_lang
+                    )
             ass_filename = f"{batch_id}_clip_{idx}.ass"
             ass_path = str(TEMP_DIR / ass_filename)
             await asyncio.to_thread(
@@ -400,14 +419,33 @@ async def render_merged_batch_clips(
             e_t = float(seg.get("end_time", s_t + 30.0))
             seg_dur = max(0.1, e_t - s_t)
             if settings.caption_style != "none":
-                seg_words = await asyncio.to_thread(
-                    transcribe_clip_words,
-                    part_paths[i],
-                    transcript,
-                    s_t,
-                    e_t,
-                    target_lang
-                )
+                custom_cues = seg.get("custom_cues")
+                if custom_cues and isinstance(custom_cues, list) and len(custom_cues) > 0:
+                    from backend.video_engine import clean_caption_text
+                    seg_words = []
+                    for cue in custom_cues:
+                        c_text = clean_caption_text(cue.get("text", ""))
+                        if not c_text:
+                            continue
+                        c_words = c_text.split()
+                        if not c_words:
+                            continue
+                        c_start = float(cue.get("start", 0.0))
+                        c_end = float(cue.get("end", c_start + 1.0))
+                        w_dur = max(0.08, (c_end - c_start) / len(c_words))
+                        for w_i, w in enumerate(c_words):
+                            w_s = round(c_start + (w_i * w_dur), 2)
+                            w_e = round(w_s + w_dur, 2)
+                            seg_words.append({"word": w, "start": w_s, "end": w_e})
+                else:
+                    seg_words = await asyncio.to_thread(
+                        transcribe_clip_words,
+                        part_paths[i],
+                        transcript,
+                        s_t,
+                        e_t,
+                        target_lang
+                    )
                 for w in seg_words:
                     w_copy = dict(w)
                     w_start = float(w.get("start", 0.0))
