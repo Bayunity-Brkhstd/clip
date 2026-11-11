@@ -11,14 +11,22 @@ Segala puji dan syukur atas kelimpahan akal, kesehatan, kesabaran, daya tahan me
 
 ---
 
-## 🏢 2. Studio & Bendera Perjuangan
+## 👥 2. Tim Pengembang & Kontributor Resmi (Core Contributors)
+
+* **Bayu / Bayunity-Brkhstd ([BRKH Studio](https://github.com/Bayunity-Brkhstd))** — Lead Developer, Architect, & Project Maintainer.
+* **Google Antigravity ([Google DeepMind](https://deepmind.google/))** — Autonomous AI Engineering Contributor & Pair-Programming Partner (bertanggung jawab atas refaktorisasi arsitektur, verifikasi zero-defect, sinkronisasi audio-subtitle, de-overlapping engine, dan optimasi FFmpeg).
+* **Galih Juan Saputra ([github.com/galihjuansaputra/cheat-clip-pro](https://github.com/galihjuansaputra/cheat-clip-pro.git))** — Kreator awal dan pemilik fondasi repositori orisinal Cheat Clip Pro.
+
+---
+
+## 🏢 3. Studio & Bendera Perjuangan
 
 ### BRKH Studio
 Rumah dan wadah kreatif independen tempat ide-ide liar diracik menjadi produk nyata. Bukti bahwa proyek solo developer lokal mampu bersaing dan menghadirkan solusi teknologi mandiri tanpa ketergantungan biaya langganan SaaS yang mahal.
 
 ---
 
-## ⚡ 3. Karakter Panutan & Mentalitas Kultivasi (Anime & Donghua MCs)
+## ⚡ 4. Karakter Panutan & Mentalitas Kultivasi (Anime & Donghua MCs)
 
 Figur-figur fiktif dengan tekad sekeras baja (*dao heart*) yang menginspirasi mentalitas pantang menyerah saat proyek terasa mustahil diselesaikan sendirian:
 
@@ -30,7 +38,7 @@ Figur-figur fiktif dengan tekad sekeras baja (*dao heart*) yang menginspirasi me
 
 ---
 
-## 🤖 4. AI Co-Pilots & Autonomous Engineering Partners
+## 🤖 5. AI Co-Pilots & Autonomous Engineering Partners
 
 Deretan kecerdasan buatan yang bertindak sebagai "rekan kerja virtual", reviewer kode tanpa lelah, dan sparing partner diskusi arsitektur tingkat lanjut:
 
@@ -41,7 +49,7 @@ Deretan kecerdasan buatan yang bertindak sebagai "rekan kerja virtual", reviewer
 
 ---
 
-## 🎧 5. Bensin & Soundtrack Begadang (Sonic Fuel)
+## 🎧 6. Bensin & Soundtrack Begadang (Sonic Fuel)
 
 Musik-musik yang memompa dopamin, memecah kantuk jam 3 pagi, dan menjaga ritme ketukan keyboard tetap beringas:
 
@@ -51,7 +59,7 @@ Musik-musik yang memompa dopamin, memecah kantuk jam 3 pagi, dan menjaga ritme k
 
 ---
 
-## 🌐 6. Knowledge Hubs, Dokumentasi & Komunitas
+## 🌐 7. Knowledge Hubs, Dokumentasi & Komunitas
 
 Pondasi pengetahuan terbuka tempat seluruh kendala teknis menemukan jawabannya:
 
