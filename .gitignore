@@ -52,6 +52,7 @@ backend/temp/
 backend/temp_downloads/
 backend/temp_clips/
 backend/exports/
+backend/fontconfig/
 *.ass
 *.mp4
 *.m4a

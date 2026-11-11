@@ -232,16 +232,30 @@ export async function renderClipWebCodecs(options: WebCodecsRenderOptions): Prom
         const subFontSize = Math.max(24, Math.round(targetHeight * 0.042));
         ctx.font = `800 ${subFontSize}px 'Outfit', sans-serif`;
         ctx.textAlign = 'center';
-        ctx.textBaseline = 'bottom';
+        ctx.textBaseline = 'middle';
         ctx.shadowColor = 'rgba(0, 0, 0, 0.95)';
         ctx.shadowBlur = 8;
         ctx.lineWidth = Math.max(4, Math.round(subFontSize * 0.12));
         ctx.strokeStyle = '#000000';
-        const subY = targetHeight * 0.86;
-        const textUpper = activeSub.text.toUpperCase();
-        ctx.strokeText(textUpper, targetWidth / 2, subY);
         ctx.fillStyle = '#FFE600';
-        ctx.fillText(textUpper, targetWidth / 2, subY);
+
+        const lines = activeSub.text.split('\n').filter(l => l.trim().length > 0);
+        const lineHeight = Math.round(subFontSize * 1.25);
+        const baseY = targetHeight * 0.86;
+
+        if (lines.length <= 1) {
+          const textUpper = (lines[0] || activeSub.text).toUpperCase();
+          ctx.strokeText(textUpper, targetWidth / 2, baseY);
+          ctx.fillText(textUpper, targetWidth / 2, baseY);
+        } else {
+          const startY = baseY - (lineHeight * 0.5);
+          lines.slice(0, 2).forEach((lineText, lIdx) => {
+            const lineY = startY + (lIdx * lineHeight);
+            const textUpper = lineText.toUpperCase();
+            ctx.strokeText(textUpper, targetWidth / 2, lineY);
+            ctx.fillText(textUpper, targetWidth / 2, lineY);
+          });
+        }
         ctx.restore();
       }
     }

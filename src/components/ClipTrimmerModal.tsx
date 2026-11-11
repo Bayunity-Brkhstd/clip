@@ -560,17 +560,25 @@ export const ClipTrimmerModal: React.FC<ClipTrimmerModalProps> = ({
     return transcript.filter(line => line.end >= minTimelineStart && line.start <= maxTimelineEnd);
   }, [transcript, minTimelineStart, maxTimelineEnd]);
 
-  // Construct adjusted clip object for downloading
-  const getAdjustedClip = (): ViralClip => ({
-    virality_score: 85,
-    key_quotes: [],
-    transcript: '',
-    ...(clip || {}),
-    title: clipTitle.trim() || clip?.title || 'Clip',
-    title_suggestion: clipTitle.trim() || clip?.title_suggestion || 'Clip',
-    start_time: adjustedStart,
-    end_time: adjustedEnd,
-  });
+  // Construct adjusted clip object for downloading or applying
+  const getAdjustedClip = (): ViralClip => {
+    const res: ViralClip = {
+      virality_score: 85,
+      key_quotes: [],
+      transcript: '',
+      ...(clip || {}),
+      title: clipTitle.trim() || clip?.title || 'Clip',
+      title_suggestion: clipTitle.trim() || clip?.title_suggestion || 'Clip',
+      start_time: adjustedStart,
+      end_time: adjustedEnd,
+    };
+    // If start or end boundaries were modified, clear stale custom_cues so
+    // that the transcript is re-sliced cleanly relative to the newly trimmed audio
+    if (adjustedStart !== origStart || adjustedEnd !== origEnd) {
+      delete res.custom_cues;
+    }
+    return res;
+  };
 
   const handleDownloadClick = async () => {
     if (isDownloading) return;

@@ -41,6 +41,31 @@ else:
     COOKIES_PATH = BASE_DIR / "cookies.txt"
     ROOT_COOKIES_PATH = BASE_DIR.parent / "cookies.txt"
 
+# Ensure Fontconfig configuration exists on Windows/Linux to prevent FFmpeg font errors
+FONTCONFIG_DIR = BASE_DIR / "fontconfig"
+FONTCONFIG_DIR.mkdir(parents=True, exist_ok=True)
+fonts_conf_file = FONTCONFIG_DIR / "fonts.conf"
+if not fonts_conf_file.exists():
+    try:
+        raw_fd = str(FONTS_DIR.resolve()).replace("\\", "/")
+        conf_xml = f"""<?xml version="1.0"?>
+<!DOCTYPE fontconfig SYSTEM "fonts.dtd">
+<fontconfig>
+  <dir>{raw_fd}</dir>
+  <dir>C:/Windows/Fonts</dir>
+  <dir>~/.fonts</dir>
+  <cachedir>~/.cache/fontconfig</cachedir>
+  <config></config>
+</fontconfig>"""
+        fonts_conf_file.write_text(conf_xml, encoding="utf-8")
+    except Exception:
+        pass
+
+if "FONTCONFIG_FILE" not in os.environ and fonts_conf_file.exists():
+    os.environ["FONTCONFIG_FILE"] = str(fonts_conf_file.resolve())
+if "FONTCONFIG_PATH" not in os.environ:
+    os.environ["FONTCONFIG_PATH"] = str(FONTCONFIG_DIR.resolve())
+
 
 def normalize_to_netscape(raw_content: str) -> str:
     """Cleans raw cookie input, strips UTF BOMs and null bytes, and auto-converts
@@ -1310,13 +1335,13 @@ def download_full_raw_video(
     raise RuntimeError("Failed to download raw video. Please check your cookies or network connection.")
 
 
-def clean_caption_text(text: str) -> str:
+def clean_caption_text(text: str, preserve_newlines: bool = False) -> str:
     """
     Cleans transcripted subtitle/caption text by:
     1. Removing sound/action tags like [LAUGHTER], [APPLAUSE], [MUSIC], (laughter), *cheering*.
     2. Removing common sound effect words if present.
     3. Stripping all symbols EXCEPT '.', ',', '%', '&', '$', '?' (keeping alphanumeric characters and spaces).
-    4. Normalizing whitespace.
+    4. Normalizing whitespace (optionally preserving newlines for 2-line subtitles).
     """
     if not text:
         return ""
@@ -1330,10 +1355,14 @@ def clean_caption_text(text: str) -> str:
     # 4. Remove all symbols except . , % & $ ? (keep letters, digits, whitespace, . , % & $ ?)
     # Note: in Python regex \w includes '_', so we explicitly eliminate '_'
     t = re.sub(r'[^\w\s.,%&$?]|_', '', t)
-    # 5. Collapse multiple spaces and trim
-    t = re.sub(r'\s+', ' ', t).strip()
+    # 5. Collapse spaces
+    if preserve_newlines:
+        lines = [re.sub(r'[^\S\r\n]+', ' ', l).strip() for l in t.splitlines()]
+        t = "\n".join([l for l in lines if l])
+    else:
+        t = re.sub(r'\s+', ' ', t).strip()
     # If the string consists purely of punctuation, clear it
-    if re.fullmatch(r'[\.\,\%\&\$\? ]+', t):
+    if re.fullmatch(r'[\.\,\%\&\$\?\s]+', t):
         return ""
     return t
 
@@ -1485,15 +1514,22 @@ def transcribe_clip_words(
             line_words = cleaned_line.split()
             if not line_words:
                 continue
-            w_duration = max(0.12, (rel_end - rel_start) / len(line_words))
+            # Natural speech timing calibration: respect line duration unless trailing silence is detected
+            raw_line_dur = max(0.4, rel_end - rel_start)
+            max_plausible_dur = len(line_words) * 0.52 + 0.25
+            spoken_dur = min(raw_line_dur, max_plausible_dur)
+            weights = [max(2, len(re.sub(r'[^a-zA-Z0-9]', '', w)) or len(w)) for w in line_words]
+            total_w = sum(weights) or 1
+            cur_s = rel_start
             for i, w in enumerate(line_words):
-                w_s = rel_start + (i * w_duration)
-                w_e = w_s + w_duration
+                w_dur = max(0.14, min(0.60, spoken_dur * (weights[i] / total_w)))
+                w_e = cur_s + w_dur
                 words.append({
                     "word": w,
-                    "start": round(w_s, 2),
+                    "start": round(cur_s, 2),
                     "end": round(w_e, 2)
                 })
+                cur_s = w_e
         if words:
             logger.info(f"Fallback: using transcript words for clip range [{clip_start_time:.1f}s -> {clip_end_time:.1f}s].")
             return words
@@ -1618,21 +1654,47 @@ def split_text_and_emojis(text: str) -> List[Tuple[str, str]]:
 
 
 def get_font(font_name: str, size: int) -> ImageFont.FreeTypeFont:
-    """Resolves font with fallback to Montserrat or default font."""
+    """Resolves font with fallback to Montserrat, system fonts, or default font."""
     fonts_dir = str(FONTS_DIR)
-    for ext in [".ttf", ".otf", ""]:
-        p = os.path.join(fonts_dir, f"{font_name}{ext}")
-        if os.path.exists(p):
+    clean_name = font_name.replace(".ttf", "").replace(".otf", "").strip() if font_name else "Montserrat"
+    
+    aliases = [clean_name, clean_name.lower(), clean_name.replace(" ", ""), clean_name.replace(" ", "_")]
+    if clean_name.lower() in ("arial black", "arialblack"):
+        aliases.extend(["Arial Black", "ArialBlack", "ariblk"])
+    elif clean_name.lower() == "impact":
+        aliases.extend(["Impact", "impact"])
+
+    # 1. Search in local FONTS_DIR
+    for alias in aliases:
+        for ext in [".ttf", ".otf", ".TTF", ".OTF", ""]:
+            p = os.path.join(fonts_dir, f"{alias}{ext}")
+            if os.path.exists(p):
+                try:
+                    return ImageFont.truetype(p, size)
+                except Exception:
+                    pass
+
+    # 2. Search in system fonts (Windows & Linux)
+    sys_dirs = [Path("C:/Windows/Fonts"), Path("/usr/share/fonts"), Path("/usr/local/share/fonts")]
+    for sdir in sys_dirs:
+        if sdir.exists():
+            for alias in aliases:
+                for ext in [".ttf", ".otf", ".TTF", ".OTF"]:
+                    sp = sdir / f"{alias}{ext}"
+                    if sp.exists():
+                        try:
+                            return ImageFont.truetype(str(sp), size)
+                        except Exception:
+                            pass
+
+    # 3. Fallbacks in FONTS_DIR
+    for fb in ["Montserrat.ttf", "Outfit.ttf", "Inter.ttf", "Anton.ttf", "Poppins.ttf"]:
+        p_fallback = os.path.join(fonts_dir, fb)
+        if os.path.exists(p_fallback):
             try:
-                return ImageFont.truetype(p, size)
+                return ImageFont.truetype(p_fallback, size)
             except Exception:
                 pass
-    p_fallback = os.path.join(fonts_dir, "Montserrat.ttf")
-    if os.path.exists(p_fallback):
-        try:
-            return ImageFont.truetype(p_fallback, size)
-        except Exception:
-            pass
     return ImageFont.load_default()
 
 
@@ -1662,19 +1724,37 @@ def get_ffmpeg_safe_font_path(font_name: str = "Montserrat") -> str:
     """Returns an escaped font file path safe for FFmpeg drawtext filter to avoid Fontconfig errors on Windows."""
     fonts_dir = Path(FONTS_DIR)
     clean_name = font_name.replace(".ttf", "").replace(".otf", "").strip() if font_name else "Montserrat"
-    candidates = [
-        fonts_dir / f"{clean_name}.ttf",
-        fonts_dir / f"{clean_name}.otf",
-        fonts_dir / "Montserrat.ttf",
-        fonts_dir / "Inter.ttf",
-        fonts_dir / "Poppins.ttf",
-        fonts_dir / "Bebas Neue.ttf",
-        fonts_dir / "Anton.ttf",
-    ]
-    for c in candidates:
-        if c.exists():
-            clean = str(c.resolve()).replace("\\", "/")
+    aliases = [clean_name, clean_name.lower(), clean_name.replace(" ", "")]
+    if clean_name.lower() in ("arial black", "arialblack"):
+        aliases.extend(["Arial Black", "ariblk"])
+    elif clean_name.lower() == "impact":
+        aliases.extend(["Impact", "impact"])
+
+    # 1. Check local FONTS_DIR
+    for alias in aliases:
+        for ext in [".ttf", ".otf", ".TTF"]:
+            cand = fonts_dir / f"{alias}{ext}"
+            if cand.exists():
+                clean = str(cand.resolve()).replace("\\", "/")
+                return clean.replace(":", "\\:")
+
+    # 2. Check Windows System Fonts
+    win_fonts = Path("C:/Windows/Fonts")
+    if win_fonts.exists():
+        for alias in aliases:
+            for ext in [".ttf", ".otf", ".TTF"]:
+                cand = win_fonts / f"{alias}{ext}"
+                if cand.exists():
+                    clean = str(cand.resolve()).replace("\\", "/")
+                    return clean.replace(":", "\\:")
+
+    # 3. Fallbacks in FONTS_DIR
+    for fb in ["Montserrat.ttf", "Outfit.ttf", "Inter.ttf", "Anton.ttf", "Poppins.ttf", "Impact.ttf", "Arial Black.ttf"]:
+        cand = fonts_dir / fb
+        if cand.exists():
+            clean = str(cand.resolve()).replace("\\", "/")
             return clean.replace(":", "\\:")
+
     win_font = Path("C:/Windows/Fonts/arial.ttf")
     if win_font.exists():
         clean = str(win_font.resolve()).replace("\\", "/")
@@ -1752,6 +1832,73 @@ def render_text_watermark_png(
     return output_png_path
 
 
+def resolve_and_prepare_watermark_image(
+    raw_path: Optional[str],
+    target_width: Optional[int] = None
+) -> Optional[str]:
+    """
+    Robustly resolves watermark image from any path (absolute, relative, or URL path),
+    verifies and converts it to a standard 32-bit RGBA PNG with even dimensions.
+    Guarantees 100% compatibility with FFmpeg image decoder across all platforms.
+    """
+    if not raw_path or not str(raw_path).strip():
+        return None
+
+    clean = str(raw_path).strip().replace("\\", "/")
+    candidate_paths = [Path(clean)]
+
+    base_name = os.path.basename(clean)
+    candidate_paths.extend([
+        UPLOADS_DIR / base_name,
+        TEMP_DIR / "uploads" / base_name,
+        BASE_DIR / "uploads" / base_name,
+        TEMP_DIR / base_name,
+        BASE_DIR / base_name,
+    ])
+
+    found_file: Optional[Path] = None
+    for cand in candidate_paths:
+        try:
+            if cand.exists() and cand.is_file():
+                found_file = cand.resolve()
+                break
+        except Exception:
+            continue
+
+    if not found_file:
+        logger.warning(f"Watermark image file not found across search paths: '{clean}'")
+        return None
+
+    # Load with Pillow to sanitize format, convert CMYK/P to RGBA, and ensure even dimensions
+    try:
+        from PIL import Image
+        with Image.open(str(found_file)) as img:
+            rgba_img = img.convert("RGBA")
+            
+            # If target_width is requested and aspect ratio is known, pre-scale smoothly with LANCZOS
+            if target_width and target_width > 16:
+                aspect = rgba_img.height / max(1, rgba_img.width)
+                tw = target_width if target_width % 2 == 0 else target_width + 1
+                th = max(16, int(round(tw * aspect)))
+                if th % 2 != 0:
+                    th += 1
+                rgba_img = rgba_img.resize((tw, th), Image.Resampling.LANCZOS)
+            else:
+                # Ensure even width and height
+                w, h = rgba_img.size
+                nw = w if w % 2 == 0 else w + 1
+                nh = h if h % 2 == 0 else h + 1
+                if nw != w or nh != h:
+                    rgba_img = rgba_img.resize((nw, nh), Image.Resampling.LANCZOS)
+
+            norm_path = TEMP_DIR / f"wm_norm_{int(time.time() * 1000)}_{os.getpid()}.png"
+            rgba_img.save(str(norm_path), "PNG")
+            return str(norm_path)
+    except Exception as e:
+        logger.error(f"Failed to normalize watermark image {found_file} with Pillow: {e}")
+        return str(found_file)
+
+
 def render_title_overlay_png(
     title_text: str,
     output_png_path: str,
@@ -1767,7 +1914,8 @@ def render_title_overlay_png(
     streamer_preset: Optional[str] = "none",
     title_font_name: Optional[str] = None,
     title_font_size_px: Optional[int] = None,
-    title_text_case: Optional[str] = None
+    title_text_case: Optional[str] = None,
+    title_x_percent: Optional[float] = 50.0
 ) -> Optional[str]:
     """
     Renders the title with full-color emojis and bold styled typography into a transparent
@@ -1911,7 +2059,9 @@ def render_title_overlay_png(
             segment_widths.append(w)
 
         total_line_w = sum(segment_widths)
-        start_x = (canvas_w - total_line_w) / 2.0
+        t_x_pct = 50.0 if title_x_percent is None else float(title_x_percent)
+        target_center_x = canvas_w * (t_x_pct / 100.0)
+        start_x = max(16.0, min(canvas_w - total_line_w - 16.0, target_center_x - (total_line_w / 2.0)))
 
         # 2. Draw shadow first (for text segments)
         cur_x = start_x
@@ -1965,10 +2115,10 @@ def escape_ass_text(text: str) -> str:
 
 
 def generate_ass_file(
-    words: List[Dict[str, Any]],
-    style_preset: str,
-    font_name: str,
-    output_ass_path: str,
+    words: Optional[List[Dict[str, Any]]] = None,
+    style_preset: str = "viral_pop",
+    font_name: str = "Outfit",
+    output_ass_path: str = "",
     target_aspect_ratio: str = "9:16",
     font_size_preset: str = "medium",
     text_case: str = "uppercase",
@@ -1986,7 +2136,10 @@ def generate_ass_file(
     title_font_name: Optional[str] = None,
     font_size_px: Optional[int] = None,
     title_font_size_px: Optional[int] = None,
-    title_text_case: Optional[str] = None
+    title_text_case: Optional[str] = None,
+    custom_cues: Optional[List[Dict[str, Any]]] = None,
+    title_x_percent: Optional[float] = 50.0,
+    subtitle_offset_seconds: Optional[float] = 0.0
 ) -> str:
     """
     Generates an Advanced SubStation Alpha (.ass) subtitle and title file with karaoke / word-level animation.
@@ -2019,6 +2172,8 @@ def generate_ass_file(
     canvas_w = 1920 if is_landscape else 1080
     canvas_h = 1080 if is_landscape else 1920
     center_x = 960 if is_landscape else 540
+    t_x_pct = 50.0 if title_x_percent is None else float(title_x_percent)
+    title_center_x = max(16, min(canvas_w - 16, int(round(canvas_w * (t_x_pct / 100.0)))))
 
     # 2. Font Sizes based on preset, with automatic scale-down for 3+ line titles
     if is_landscape:
@@ -2248,108 +2403,196 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
         for line_idx, t_line in enumerate(title_lines):
             line_y = base_ass_y + (line_idx * line_step)
             events.append(
-                f"Dialogue: 1,0:00:00.00,{end_time_str},TitleStyle,,0,0,0,,{{\\q2\\an8\\pos({center_x},{line_y})}}{t_line}"
+                f"Dialogue: 1,0:00:00.00,{end_time_str},TitleStyle,,0,0,0,,{{\\q2\\an8\\pos({title_center_x},{line_y})}}{t_line}"
             )
 
     # 4. Add Subtitle Events if captions are enabled (guaranteed ZERO vertical glitch / jumping)
-    if words and style_preset != "none":
-        # Step A: Sanitize and sort all word timestamps
-        valid_words = []
-        for w in words:
-            raw_text = clean_caption_text(w.get("word", "").strip())
-            if not raw_text:
-                continue
-            w_text = escape_ass_text(apply_text_case(raw_text, text_case))
-            st = max(0.0, float(w.get("start", 0.0)))
-            et = max(st + 0.15, float(w.get("end", st + 0.25)))
-            valid_words.append({"word_text": w_text, "start": st, "end": et, "raw": w})
-
-        valid_words.sort(key=lambda x: x["start"])
-
-        # Step B: Pack into compact chunks (1 to 3 words, max 22 chars) to strictly guarantee 1 single line
-        # Split on natural speech pauses (>= 0.38s) or sentence-ending punctuation so words don't hang over silences
-        chunks = []
-        current_chunk = []
-        current_chars = 0
-        for item in valid_words:
-            w_len = len(item["word_text"])
-            has_pause = bool(current_chunk and (item["start"] - current_chunk[-1]["end"] >= 0.38))
-            ends_sentence = bool(current_chunk and any(current_chunk[-1]["word_text"].endswith(p) for p in [".", "?", "!"]))
-            if len(current_chunk) >= 3 or has_pause or ends_sentence or (current_chunk and (current_chars + w_len > 22)):
-                chunks.append(current_chunk)
-                current_chunk = [item]
-                current_chars = w_len
-            else:
-                current_chunk.append(item)
-                current_chars += w_len + 1
-        if current_chunk:
-            chunks.append(current_chunk)
-
-        # Step C: Enforce strictly non-overlapping, monotonically increasing chunk boundaries
-        chunk_bounds = []
-        for chunk in chunks:
-            c_start = chunk[0]["start"]
-            c_end = max(c_start + 0.35, chunk[-1]["end"] + 0.12)
-            if chunk_bounds:
-                prev_end = chunk_bounds[-1][1]
-                if c_start < prev_end:
-                    c_start = prev_end
-                if c_end <= c_start:
-                    c_end = c_start + 0.28
-            chunk_bounds.append((c_start, c_end))
-
-        # Clamp against subsequent chunk start times to eliminate any inter-chunk overlaps
-        for i in range(len(chunk_bounds) - 1):
-            cur_s, cur_e = chunk_bounds[i]
-            nxt_s, nxt_e = chunk_bounds[i + 1]
-            if cur_e > nxt_s:
-                split_pt = max(cur_s + 0.28, nxt_s)
-                chunk_bounds[i] = (cur_s, split_pt)
-                if nxt_s < split_pt:
-                    chunk_bounds[i + 1] = (split_pt, max(split_pt + 0.28, nxt_e))
-
-        # Step D: Partition each chunk into strictly contiguous active-word time slices
-        for chunk_idx, chunk in enumerate(chunks):
-            c_start, c_end = chunk_bounds[chunk_idx]
-            if c_end <= c_start:
-                c_end = c_start + 0.25
-            num_words = len(chunk)
-
-            if num_words == 1:
-                time_slices = [(c_start, c_end)]
-            else:
-                points = [c_start]
-                for w_i in range(1, num_words):
-                    raw_st = chunk[w_i]["start"]
-                    # Enforce minimum 0.16s per word to eliminate micro-flickering while preserving acoustic sync
-                    min_allowed = points[-1] + 0.16
-                    max_allowed = c_end - 0.16 * (num_words - w_i)
-                    if min_allowed > max_allowed:
-                        pt = points[-1] + (c_end - points[-1]) / (num_words - w_i + 1)
-                    else:
-                        pt = max(min_allowed, min(max_allowed, raw_st))
-                    points.append(pt)
-                points.append(c_end)
-                time_slices = [(points[k], points[k + 1]) for k in range(num_words)]
-
-            for active_idx, (w_start, w_end) in enumerate(time_slices):
-                if w_end <= w_start:
+    if style_preset != "none" and (custom_cues or words):
+        sub_off = float(subtitle_offset_seconds or 0.0)
+        if custom_cues and len(custom_cues) > 0:
+            # Parse, sort, and strictly de-overlap custom cues so ASS events never stack or overlap
+            parsed_cues = []
+            for cue in custom_cues:
+                raw_text = cue.get("text", "")
+                if not raw_text or not str(raw_text).strip():
+                    continue
+                cleaned = clean_caption_text(str(raw_text), preserve_newlines=True)
+                if not cleaned:
                     continue
 
-                line_parts = []
-                for idx, item in enumerate(chunk):
-                    w_txt = item["word_text"]
-                    if idx == active_idx:
-                        # Highlight active word with color only (no font scale or bold toggle so metrics stay 100% identical)
-                        line_parts.append(r"{\c" + highlight_color + r"\3c" + outline_color + r"}" + w_txt + r"{\c" + primary_color + r"\3c" + outline_color + r"}")
-                    else:
-                        line_parts.append(w_txt)
+                st = max(0.0, float(cue.get("start", 0.0)) + sub_off)
+                et = max(st + 0.15, float(cue.get("end", st + 0.5)) + sub_off)
+                parsed_cues.append({"text": cleaned, "start": st, "end": et})
 
-                styled_line = " ".join(line_parts)
-                # Lock position to sub_y with \q2\an{sub_align}\pos(center_x, sub_y)
-                events.append(
-                    f"Dialogue: 0,{format_ass_timestamp(w_start)},{format_ass_timestamp(w_end)},SubStyle,,0,0,0,,{{\\q2\\an{sub_align}\\pos({center_x},{sub_y})}}{styled_line}"
-                )
+            parsed_cues.sort(key=lambda c: c["start"])
+            for idx in range(len(parsed_cues) - 1):
+                cur_c = parsed_cues[idx]
+                nxt_c = parsed_cues[idx + 1]
+                if cur_c["end"] > nxt_c["start"]:
+                    if nxt_c["start"] > cur_c["start"] + 0.2:
+                        cur_c["end"] = nxt_c["start"]
+                    else:
+                        cur_c["end"] = min(cur_c["start"] + 0.3, max(cur_c["start"] + 0.2, nxt_c["end"] - 0.1))
+                        nxt_c["start"] = cur_c["end"]
+
+            for cue_item in parsed_cues:
+                cleaned = cue_item["text"]
+                st = cue_item["start"]
+                et = cue_item["end"]
+
+                # Split lines by newline (supporting up to 2 lines)
+                raw_lines = [l.strip() for l in cleaned.split("\n") if l.strip()][:2]
+                if not raw_lines:
+                    continue
+
+                lines_words = [l.split() for l in raw_lines]
+                all_words = []
+                for l_idx, lw in enumerate(lines_words):
+                    for w in lw:
+                        all_words.append((l_idx, w))
+
+                if not all_words:
+                    continue
+
+                num_words = len(all_words)
+                total_cue_dur = et - st
+
+                if style_preset == "clean_minimal" or num_words == 1:
+                    formatted_lines = []
+                    for lw in lines_words:
+                        formatted_lines.append(" ".join([escape_ass_text(apply_text_case(w, text_case)) for w in lw]))
+                    styled_text = r"\N".join(formatted_lines)
+                    events.append(
+                        f"Dialogue: 0,{format_ass_timestamp(st)},{format_ass_timestamp(et)},SubStyle,,0,0,0,,{{\\q2\\an{sub_align}\\pos({center_x},{sub_y})}}{styled_text}"
+                    )
+                else:
+                    # Partition cue duration [st, et] across words for smooth karaoke
+                    slice_dur = total_cue_dur / num_words
+                    time_slices = []
+                    for w_i in range(num_words):
+                        w_s = st + (w_i * slice_dur)
+                        w_e = st + ((w_i + 1) * slice_dur) if w_i < num_words - 1 else et
+                        time_slices.append((w_s, w_e))
+
+                    for active_idx, (w_start, w_end) in enumerate(time_slices):
+                        if w_end <= w_start:
+                            continue
+
+                        formatted_lines = []
+                        word_cursor = 0
+                        for l_idx, lw in enumerate(lines_words):
+                            line_parts = []
+                            for w in lw:
+                                w_txt = escape_ass_text(apply_text_case(w, text_case))
+                                if word_cursor == active_idx:
+                                    line_parts.append(r"{\c" + highlight_color + r"\3c" + outline_color + r"}" + w_txt + r"{\c" + primary_color + r"\3c" + outline_color + r"}")
+                                else:
+                                    line_parts.append(w_txt)
+                                word_cursor += 1
+                            formatted_lines.append(" ".join(line_parts))
+
+                        styled_line = r"\N".join(formatted_lines)
+                        events.append(
+                            f"Dialogue: 0,{format_ass_timestamp(w_start)},{format_ass_timestamp(w_end)},SubStyle,,0,0,0,,{{\\q2\\an{sub_align}\\pos({center_x},{sub_y})}}{styled_line}"
+                        )
+        elif words:
+            # Step A: Sanitize and sort all word timestamps
+            valid_words = []
+            for w in words:
+                raw_text = clean_caption_text(w.get("word", "").strip())
+                if not raw_text:
+                    continue
+                w_text = escape_ass_text(apply_text_case(raw_text, text_case))
+                st = max(0.0, float(w.get("start", 0.0)) + sub_off)
+                et = max(st + 0.15, float(w.get("end", st + 0.25)) + sub_off)
+                valid_words.append({"word_text": w_text, "start": st, "end": et, "raw": w})
+
+            valid_words.sort(key=lambda x: x["start"])
+
+            # Step B: Pack into compact chunks (1 to 3 words, max 22 chars) to strictly guarantee 1 single line
+            # Split on natural speech pauses (>= 0.38s) or sentence-ending punctuation so words don't hang over silences
+            chunks = []
+            current_chunk = []
+            current_chars = 0
+            for item in valid_words:
+                w_len = len(item["word_text"])
+                has_pause = bool(current_chunk and (item["start"] - current_chunk[-1]["end"] >= 0.38))
+                ends_sentence = bool(current_chunk and any(current_chunk[-1]["word_text"].endswith(p) for p in [".", "?", "!"]))
+                if len(current_chunk) >= 3 or has_pause or ends_sentence or (current_chunk and (current_chars + w_len > 22)):
+                    chunks.append(current_chunk)
+                    current_chunk = [item]
+                    current_chars = w_len
+                else:
+                    current_chunk.append(item)
+                    current_chars += w_len + 1
+            if current_chunk:
+                chunks.append(current_chunk)
+
+            # Step C: Enforce strictly non-overlapping, monotonically increasing chunk boundaries
+            chunk_bounds = []
+            for chunk in chunks:
+                c_start = chunk[0]["start"]
+                c_end = max(c_start + 0.35, chunk[-1]["end"] + 0.12)
+                if chunk_bounds:
+                    prev_end = chunk_bounds[-1][1]
+                    if c_start < prev_end:
+                        c_start = prev_end
+                    if c_end <= c_start:
+                        c_end = c_start + 0.28
+                chunk_bounds.append((c_start, c_end))
+
+            # Clamp against subsequent chunk start times to eliminate any inter-chunk overlaps
+            for i in range(len(chunk_bounds) - 1):
+                cur_s, cur_e = chunk_bounds[i]
+                nxt_s, nxt_e = chunk_bounds[i + 1]
+                if cur_e > nxt_s:
+                    split_pt = max(cur_s + 0.28, nxt_s)
+                    chunk_bounds[i] = (cur_s, split_pt)
+                    if nxt_s < split_pt:
+                        chunk_bounds[i + 1] = (split_pt, max(split_pt + 0.28, nxt_e))
+
+            # Step D: Partition each chunk into strictly contiguous active-word time slices
+            for chunk_idx, chunk in enumerate(chunks):
+                c_start, c_end = chunk_bounds[chunk_idx]
+                if c_end <= c_start:
+                    c_end = c_start + 0.25
+                num_words = len(chunk)
+
+                if num_words == 1:
+                    time_slices = [(c_start, c_end)]
+                else:
+                    points = [c_start]
+                    for w_i in range(1, num_words):
+                        raw_st = chunk[w_i]["start"]
+                        # Enforce minimum 0.16s per word to eliminate micro-flickering while preserving acoustic sync
+                        min_allowed = points[-1] + 0.16
+                        max_allowed = c_end - 0.16 * (num_words - w_i)
+                        if min_allowed > max_allowed:
+                            pt = points[-1] + (c_end - points[-1]) / (num_words - w_i + 1)
+                        else:
+                            pt = max(min_allowed, min(max_allowed, raw_st))
+                        points.append(pt)
+                    points.append(c_end)
+                    time_slices = [(points[k], points[k + 1]) for k in range(num_words)]
+
+                for active_idx, (w_start, w_end) in enumerate(time_slices):
+                    if w_end <= w_start:
+                        continue
+
+                    line_parts = []
+                    for idx, item in enumerate(chunk):
+                        w_txt = item["word_text"]
+                        if idx == active_idx:
+                            # Highlight active word with color only (no font scale or bold toggle so metrics stay 100% identical)
+                            line_parts.append(r"{\c" + highlight_color + r"\3c" + outline_color + r"}" + w_txt + r"{\c" + primary_color + r"\3c" + outline_color + r"}")
+                        else:
+                            line_parts.append(w_txt)
+
+                    styled_line = " ".join(line_parts)
+                    # Lock position to sub_y with \q2\an{sub_align}\pos(center_x, sub_y)
+                    events.append(
+                        f"Dialogue: 0,{format_ass_timestamp(w_start)},{format_ass_timestamp(w_end)},SubStyle,,0,0,0,,{{\\q2\\an{sub_align}\\pos({center_x},{sub_y})}}{styled_line}"
+                    )
 
     ass_content = ass_header + "\n".join(events) + "\n"
     os.makedirs(os.path.dirname(os.path.abspath(output_ass_path)), exist_ok=True)
@@ -2828,7 +3071,8 @@ def build_ffmpeg_filtergraph(
     title_position: str = "auto",
     ass_subtitles_path: Optional[str] = None,
     face_box: Optional[Dict[str, Any]] = None,
-    title_y_percent: Optional[float] = None
+    title_y_percent: Optional[float] = None,
+    crop_x_percent: Optional[float] = None
 ) -> Tuple[str, str]:
     """
     Constructs the FFmpeg -filter_complex chain with proper aspect ratio center-cropping.
@@ -3001,11 +3245,14 @@ def build_ffmpeg_filtergraph(
                 )
 
         else:  # 9:16
-            safe_cx = float(face_cx)
-            if 0.46 <= safe_cx <= 0.54:
-                safe_cx = 0.50
-            safe_cx = max(0.22, min(0.78, safe_cx))
-            crop_ratio_safe = max(0.0, min(1.0, (safe_cx - 0.158) / 0.684))
+            if crop_x_percent is not None:
+                crop_ratio_safe = max(0.0, min(1.0, float(crop_x_percent) / 100.0))
+            else:
+                safe_cx = float(face_cx)
+                if 0.46 <= safe_cx <= 0.54:
+                    safe_cx = 0.50
+                safe_cx = max(0.22, min(0.78, safe_cx))
+                crop_ratio_safe = max(0.0, min(1.0, (safe_cx - 0.158) / 0.684))
             pip_x, pip_y = 736, 120
             filters.append(
                 f"[0:v]split=2[main_raw][pip_raw];"
@@ -3017,12 +3264,15 @@ def build_ffmpeg_filtergraph(
         current_v = "[layout_base]"
 
     elif aspect_ratio == "9:16":
-        # Full Bleed 9:16 with Face Tracking horizontal crop offset
-        safe_cx = float(face_cx)
-        if 0.46 <= safe_cx <= 0.54:
-            safe_cx = 0.50
-        safe_cx = max(0.22, min(0.78, safe_cx))
-        crop_ratio_safe = max(0.0, min(1.0, (safe_cx - 0.158) / 0.684))
+        # Full Bleed 9:16 with Face Tracking / Manual horizontal crop offset
+        if crop_x_percent is not None:
+            crop_ratio_safe = max(0.0, min(1.0, float(crop_x_percent) / 100.0))
+        else:
+            safe_cx = float(face_cx)
+            if 0.46 <= safe_cx <= 0.54:
+                safe_cx = 0.50
+            safe_cx = max(0.22, min(0.78, safe_cx))
+            crop_ratio_safe = max(0.0, min(1.0, (safe_cx - 0.158) / 0.684))
         filters.append(
             f"[0:v]crop=ih*9/16:ih:(iw-ih*9/16)*{crop_ratio_safe:.3f}:0,scale=1080:1920[layout_base]"
         )
@@ -3190,7 +3440,9 @@ def render_clip_to_mp4(
     original_audio_volume: float = 1.0,
     # Hardware acceleration selection ('auto', 'nvenc', 'amf', 'qsv', 'cpu')
     hardware_accel: Optional[str] = "auto",
-    title_y_percent: Optional[float] = None
+    title_y_percent: Optional[float] = None,
+    crop_x_percent: Optional[float] = None,
+    title_x_percent: Optional[float] = 50.0
 ) -> str:
     """
     Renders the final 1080x1920 short-form video with layout, aspect ratio, titles, subtitles,
@@ -3217,7 +3469,9 @@ def render_clip_to_mp4(
     default_cx = 0.85 if is_streamer else 0.50
     default_cy = 0.78 if is_streamer else 0.35
     face_box = {"found": False, "cx": default_cx, "cy": default_cy, "w": 0.22, "h": 0.25}
-    if enable_face_tracking or is_streamer:
+    if crop_x_percent is not None:
+        face_box = {"found": True, "cx": max(0.05, min(0.95, float(crop_x_percent) / 100.0)), "cy": default_cy, "w": 0.22, "h": 0.25}
+    elif enable_face_tracking or is_streamer:
         face_box = detect_speaker_face_box(
             video_path,
             facecam_position=facecam_position,
@@ -3233,7 +3487,8 @@ def render_clip_to_mp4(
         title_position=title_position,
         ass_subtitles_path=ass_subtitles_path,
         face_box=face_box,
-        title_y_percent=title_y_percent
+        title_y_percent=title_y_percent,
+        crop_x_percent=crop_x_percent
     )
 
     filter_chains = [filter_complex]
@@ -3266,26 +3521,31 @@ def render_clip_to_mp4(
         wm_x_ratio = max(-1.0, min(2.0, float(watermark_x_percent) / 100.0))
         wm_y_ratio = max(-1.0, min(2.0, float(watermark_y_percent) / 100.0))
 
-        if watermark_type == "image" and watermark_image_path and os.path.exists(watermark_image_path):
-            wm_idx = input_idx_counter
-            input_idx_counter += 1
-            extra_input_args.extend(["-i", str(watermark_image_path)])
-
-            # Canvas width is 1920 for landscape or 1080 for vertical. Calculate watermark width based on percentage (0-500%)
+        if watermark_type == "image":
             canvas_w = 1920 if aspect_ratio == "16:9_landscape" else 1080
-            wm_w = max(16, min(5400, int(canvas_w * (float(watermark_size) / 100.0))))
-            wm_prep = f"[{wm_idx}:v]format=rgba,colorchannelmixer=aa={wm_opacity:.2f},scale={wm_w}:-1[wm_proc]"
-            filter_chains.append(wm_prep)
+            raw_wm_w = max(16, min(5400, int(canvas_w * (float(watermark_size) / 100.0))))
+            wm_w = raw_wm_w if raw_wm_w % 2 == 0 else raw_wm_w + 1
 
-            # Center-based positioning: (X%, Y%) represents the center anchor point on the canvas.
-            # This ensures full 100% travel range across the canvas regardless of watermark size.
-            overlay_cmd = (
-                f"{out_video_map}[wm_proc]overlay="
-                f"x='main_w*{wm_x_ratio:.4f}-overlay_w/2':"
-                f"y='main_h*{wm_y_ratio:.4f}-overlay_h/2':eval=init[v_watermarked]"
-            )
-            filter_chains.append(overlay_cmd)
-            out_video_map = "[v_watermarked]"
+            resolved_wm = resolve_and_prepare_watermark_image(watermark_image_path, target_width=wm_w)
+            if resolved_wm and os.path.exists(resolved_wm):
+                wm_idx = input_idx_counter
+                input_idx_counter += 1
+                extra_input_args.extend(["-i", str(resolved_wm)])
+
+                wm_prep = f"[{wm_idx}:v]format=rgba,colorchannelmixer=aa={wm_opacity:.2f},scale={wm_w}:-2[wm_proc]"
+                filter_chains.append(wm_prep)
+
+                # Center-based positioning: (X%, Y%) represents the center anchor point on the canvas.
+                # This ensures full 100% travel range across the canvas regardless of watermark size.
+                overlay_cmd = (
+                    f"{out_video_map}[wm_proc]overlay="
+                    f"x='main_w*{wm_x_ratio:.4f}-overlay_w/2':"
+                    f"y='main_h*{wm_y_ratio:.4f}-overlay_h/2':eval=init[v_watermarked]"
+                )
+                filter_chains.append(overlay_cmd)
+                out_video_map = "[v_watermarked]"
+            else:
+                logger.warning(f"Watermark image enabled but file could not be resolved from: '{watermark_image_path}'")
 
         elif watermark_text and watermark_text.strip():
             # Render text watermark to a transparent PNG overlay using Pillow

@@ -8,6 +8,7 @@ export interface TranscriptLine {
   start: number;
   end: number;
   text: string;
+  duration?: number;
   engagement?: number;
 }
 
@@ -131,7 +132,10 @@ export interface RenderSettings {
   fontSizePx?: number;
   textCase: TextCaseOption;
   titleYPercent?: number;
+  titleXPercent?: number;
+  cropXPercent?: number;
   subtitleYPercent?: number;
+  subtitleOffsetSeconds?: number;
   subtitlePositionMode?: SubtitlePositionMode;
   subtitleCenterYPercent?: number;
   selectedClips: ViralClip[];

@@ -122,7 +122,8 @@ async def render_single_batch_clip(
                     streamer_preset=settings.streamer_preset or "none",
                     title_font_name=settings.title_font or settings.caption_font or "Outfit",
                     title_font_size_px=settings.title_font_size_px,
-                    title_text_case=settings.title_text_case or settings.text_case or "uppercase"
+                    title_text_case=settings.title_text_case or settings.text_case or "uppercase",
+                    title_x_percent=getattr(settings, "title_x_percent", 50.0)
                 )
                 if rendered_overlay and os.path.exists(rendered_overlay):
                     title_overlay_path = rendered_overlay
@@ -145,25 +146,12 @@ async def render_single_batch_clip(
 
         if settings.caption_style != "none" or (display_title and settings.title_position != "none" and not skip_ass_title):
             words = []
+            custom_cues_to_pass = None
             if settings.caption_style != "none":
                 custom_cues = clip.get("custom_cues") or getattr(settings, "custom_cues", None)
                 if custom_cues and isinstance(custom_cues, list) and len(custom_cues) > 0:
                     logger.info(f"Using {len(custom_cues)} user-edited custom subtitle cues for clip {idx}...")
-                    from backend.video_engine import clean_caption_text
-                    for cue in custom_cues:
-                        c_text = clean_caption_text(cue.get("text", ""))
-                        if not c_text:
-                            continue
-                        c_words = c_text.split()
-                        if not c_words:
-                            continue
-                        c_start = float(cue.get("start", 0.0))
-                        c_end = float(cue.get("end", c_start + 1.0))
-                        w_dur = max(0.08, (c_end - c_start) / len(c_words))
-                        for w_i, w in enumerate(c_words):
-                            w_s = round(c_start + (w_i * w_dur), 2)
-                            w_e = round(w_s + w_dur, 2)
-                            words.append({"word": w, "start": w_s, "end": w_e})
+                    custom_cues_to_pass = custom_cues
                 else:
                     words = await asyncio.to_thread(
                         transcribe_clip_words,
@@ -178,6 +166,7 @@ async def render_single_batch_clip(
             await asyncio.to_thread(
                 generate_ass_file,
                 words=words,
+                custom_cues=custom_cues_to_pass,
                 style_preset=settings.caption_style,
                 font_name=settings.caption_font or "Outfit",
                 output_ass_path=ass_path,
@@ -198,7 +187,9 @@ async def render_single_batch_clip(
                 title_font_name=settings.title_font or settings.caption_font or "Outfit",
                 font_size_px=settings.font_size_px,
                 title_font_size_px=settings.title_font_size_px,
-                title_text_case=settings.title_text_case or settings.text_case or "uppercase"
+                title_text_case=settings.title_text_case or settings.text_case or "uppercase",
+                title_x_percent=getattr(settings, "title_x_percent", 50.0),
+                subtitle_offset_seconds=getattr(settings, "subtitle_offset_seconds", 0.0)
             )
 
         # 3. Render Final Vertical MP4
@@ -240,7 +231,9 @@ async def render_single_batch_clip(
             hook_sfx_volume=float((settings.hook_sfx_volume if settings.hook_sfx_volume is not None else 100.0) / 100.0),
             original_audio_volume=float((settings.original_audio_volume if settings.original_audio_volume is not None else 100.0) / 100.0),
             hardware_accel=settings.hardware_accel or "auto",
-            title_y_percent=settings.title_y_percent
+            title_y_percent=settings.title_y_percent,
+            crop_x_percent=getattr(settings, "crop_x_percent", None),
+            title_x_percent=getattr(settings, "title_x_percent", 50.0)
         )
 
         if not os.path.exists(out_path) or not is_valid_mp4(out_path):
@@ -414,6 +407,8 @@ async def render_merged_batch_clips(
 
         total_duration_sec = 0.0
         merged_words = []
+        merged_custom_cues = []
+        has_custom_cues = False
         for i, seg in enumerate(clips):
             s_t = float(seg.get("start_time", 0.0))
             e_t = float(seg.get("end_time", s_t + 30.0))
@@ -421,22 +416,11 @@ async def render_merged_batch_clips(
             if settings.caption_style != "none":
                 custom_cues = seg.get("custom_cues")
                 if custom_cues and isinstance(custom_cues, list) and len(custom_cues) > 0:
-                    from backend.video_engine import clean_caption_text
-                    seg_words = []
+                    has_custom_cues = True
                     for cue in custom_cues:
-                        c_text = clean_caption_text(cue.get("text", ""))
-                        if not c_text:
-                            continue
-                        c_words = c_text.split()
-                        if not c_words:
-                            continue
-                        c_start = float(cue.get("start", 0.0))
-                        c_end = float(cue.get("end", c_start + 1.0))
-                        w_dur = max(0.08, (c_end - c_start) / len(c_words))
-                        for w_i, w in enumerate(c_words):
-                            w_s = round(c_start + (w_i * w_dur), 2)
-                            w_e = round(w_s + w_dur, 2)
-                            seg_words.append({"word": w, "start": w_s, "end": w_e})
+                        c_start = round(float(cue.get("start", 0.0)) + total_duration_sec, 3)
+                        c_end = round(float(cue.get("end", c_start + 1.0)) + total_duration_sec, 3)
+                        merged_custom_cues.append({**cue, "start": c_start, "end": c_end})
                 else:
                     seg_words = await asyncio.to_thread(
                         transcribe_clip_words,
@@ -446,13 +430,13 @@ async def render_merged_batch_clips(
                         e_t,
                         target_lang
                     )
-                for w in seg_words:
-                    w_copy = dict(w)
-                    w_start = float(w.get("start", 0.0))
-                    w_end = float(w.get("end", w_start + 0.15))
-                    w_copy["start"] = round(total_duration_sec + max(0.0, w_start), 3)
-                    w_copy["end"] = round(max(w_copy["start"] + 0.1, total_duration_sec + max(0.0, w_end)), 3)
-                    merged_words.append(w_copy)
+                    for w in seg_words:
+                        w_copy = dict(w)
+                        w_start = float(w.get("start", 0.0))
+                        w_end = float(w.get("end", w_start + 0.15))
+                        w_copy["start"] = round(total_duration_sec + max(0.0, w_start), 3)
+                        w_copy["end"] = round(max(w_copy["start"] + 0.1, total_duration_sec + max(0.0, w_end)), 3)
+                        merged_words.append(w_copy)
             total_duration_sec += seg_dur
 
         total_duration_sec = max(1.0, total_duration_sec)
@@ -482,7 +466,8 @@ async def render_merged_batch_clips(
                     streamer_preset=settings.streamer_preset or "none",
                     title_font_name=settings.title_font or settings.caption_font or "Outfit",
                     title_font_size_px=settings.title_font_size_px,
-                    title_text_case=settings.title_text_case or settings.text_case or "uppercase"
+                    title_text_case=settings.title_text_case or settings.text_case or "uppercase",
+                    title_x_percent=getattr(settings, "title_x_percent", 50.0)
                 )
                 if rendered_overlay and os.path.exists(rendered_overlay):
                     title_overlay_path = rendered_overlay
@@ -497,6 +482,7 @@ async def render_merged_batch_clips(
             await asyncio.to_thread(
                 generate_ass_file,
                 words=merged_words,
+                custom_cues=merged_custom_cues if has_custom_cues else None,
                 style_preset=settings.caption_style,
                 font_name=settings.caption_font or "Outfit",
                 output_ass_path=ass_path,
@@ -517,7 +503,9 @@ async def render_merged_batch_clips(
                 title_font_name=settings.title_font or settings.caption_font or "Outfit",
                 font_size_px=settings.font_size_px,
                 title_font_size_px=settings.title_font_size_px,
-                title_text_case=settings.title_text_case or settings.text_case or "uppercase"
+                title_text_case=settings.title_text_case or settings.text_case or "uppercase",
+                title_x_percent=getattr(settings, "title_x_percent", 50.0),
+                subtitle_offset_seconds=getattr(settings, "subtitle_offset_seconds", 0.0)
             )
 
         # 4. Render Final Single MP4
@@ -561,7 +549,9 @@ async def render_merged_batch_clips(
             hook_sfx_volume=float((settings.hook_sfx_volume if settings.hook_sfx_volume is not None else 100.0) / 100.0),
             original_audio_volume=float((settings.original_audio_volume if settings.original_audio_volume is not None else 100.0) / 100.0),
             hardware_accel=settings.hardware_accel or "auto",
-            title_y_percent=settings.title_y_percent
+            title_y_percent=settings.title_y_percent,
+            crop_x_percent=getattr(settings, "crop_x_percent", None),
+            title_x_percent=getattr(settings, "title_x_percent", 50.0)
         )
 
         if not os.path.exists(out_path) or not is_valid_mp4(out_path):

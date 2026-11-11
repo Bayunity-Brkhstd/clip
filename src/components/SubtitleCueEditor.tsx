@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import type { SubtitleCue } from '../types';
-import { formatTimecode, parseTimecode, splitCue, deleteCue, addCue } from '../utils/subtitleUtils';
+import { formatTimecode, parseTimecode, splitCue, deleteCue, addCue, deoverlapCues } from '../utils/subtitleUtils';
 
 export interface SubtitleCueEditorProps {
   cues: SubtitleCue[];
@@ -50,7 +50,7 @@ export const SubtitleCueEditor: React.FC<SubtitleCueEditorProps> = ({
     onChangeCues(updated);
   };
 
-  // Update start time
+  // Update start time with anti-overlap clamping
   const handleStartTimeChange = (id: string, rawVal: string) => {
     const parsed = parseTimecode(rawVal);
     const updated = cues.map(cue => {
@@ -60,10 +60,10 @@ export const SubtitleCueEditor: React.FC<SubtitleCueEditorProps> = ({
       }
       return cue;
     });
-    onChangeCues(updated);
+    onChangeCues(deoverlapCues(updated, clipDuration));
   };
 
-  // Update end time
+  // Update end time with anti-overlap clamping
   const handleEndTimeChange = (id: string, rawVal: string) => {
     const parsed = parseTimecode(rawVal);
     const updated = cues.map(cue => {
@@ -73,22 +73,30 @@ export const SubtitleCueEditor: React.FC<SubtitleCueEditorProps> = ({
       }
       return cue;
     });
-    onChangeCues(updated);
+    onChangeCues(deoverlapCues(updated, clipDuration));
   };
 
   const handleSplit = (id: string) => {
-    const updated = splitCue(cues, id);
-    onChangeCues(updated);
+    const targetCue = cues.find(c => c.id === id);
+    const splitAt = (targetCue && relTime > targetCue.start + 0.2 && relTime < targetCue.end - 0.2)
+      ? relTime
+      : undefined;
+    const updated = splitCue(cues, id, splitAt);
+    onChangeCues(deoverlapCues(updated, clipDuration));
   };
 
   const handleDelete = (id: string) => {
     const updated = deleteCue(cues, id);
-    onChangeCues(updated);
+    onChangeCues(deoverlapCues(updated, clipDuration));
   };
 
   const handleAddAfter = (afterId?: string) => {
     const updated = addCue(cues, clipDuration, afterId);
-    onChangeCues(updated);
+    onChangeCues(deoverlapCues(updated, clipDuration));
+  };
+
+  const handleAutoAlign = () => {
+    onChangeCues(deoverlapCues(cues, clipDuration));
   };
 
   return (
@@ -122,6 +130,16 @@ export const SubtitleCueEditor: React.FC<SubtitleCueEditorProps> = ({
             />
             Auto-Scroll
           </label>
+
+          <button
+            type="button"
+            className="cue-btn-action"
+            onClick={handleAutoAlign}
+            title="Rapikan durasi dan sejajarkan semua baris agar tidak numpuk dan tepat dengan jeda audio"
+            style={{ color: '#00f0ff', borderColor: 'rgba(0, 240, 255, 0.4)' }}
+          >
+            ⚡ Rapikan Waktu
+          </button>
 
           <button
             type="button"
@@ -216,15 +234,35 @@ export const SubtitleCueEditor: React.FC<SubtitleCueEditorProps> = ({
                 {/* Duration Tag */}
                 <span className="cue-duration-tag">{duration.toFixed(1)}s</span>
 
-                {/* Subtitle Text Input */}
+                {/* Subtitle Text Input (Supports 2 Lines via Enter) */}
                 {cue.isEdited && <span className="cue-edited-dot" title="Telah diedit manual" />}
-                <input
-                  type="text"
+                <textarea
                   className="cue-text-input"
                   value={cue.text}
-                  onChange={e => handleTextChange(cue.id, e.target.value)}
-                  placeholder="Ketik teks subtitle..."
-                  title="Edit teks subtitle yang akan ditampilkan"
+                  rows={cue.text.includes('\n') ? 2 : 1}
+                  style={{
+                    height: cue.text.includes('\n') ? '46px' : '32px',
+                    lineHeight: '1.35',
+                  }}
+                  onChange={e => {
+                    const val = e.target.value;
+                    const lines = val.split('\n');
+                    if (lines.length > 2) {
+                      handleTextChange(cue.id, lines.slice(0, 2).join('\n'));
+                    } else {
+                      handleTextChange(cue.id, val);
+                    }
+                  }}
+                  onKeyDown={e => {
+                    if (e.key === 'Enter') {
+                      const lines = cue.text.split('\n');
+                      if (lines.length >= 2) {
+                        e.preventDefault();
+                      }
+                    }
+                  }}
+                  placeholder="Ketik teks subtitle (Enter untuk 2 baris)..."
+                  title="Edit teks subtitle (tekan Enter untuk membuat 2 baris)"
                 />
 
                 {/* Tool Buttons */}

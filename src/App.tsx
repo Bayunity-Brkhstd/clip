@@ -704,7 +704,10 @@ export default function App() {
             text_case: settings.textCase,
             title_text_case: settings.titleTextCase || settings.textCase,
             title_y_percent: settings.titleYPercent,
+            title_x_percent: settings.titleXPercent !== undefined ? settings.titleXPercent : 50.0,
+            crop_x_percent: settings.cropXPercent !== undefined ? settings.cropXPercent : null,
             subtitle_y_percent: settings.subtitleYPercent,
+            subtitle_offset_seconds: settings.subtitleOffsetSeconds !== undefined ? settings.subtitleOffsetSeconds : 0.0,
             subtitle_position_mode: settings.subtitlePositionMode || 'bottom',
             subtitle_center_y_percent: settings.subtitleCenterYPercent !== undefined ? settings.subtitleCenterYPercent : 50.0,
             // Background Music
@@ -2223,6 +2226,16 @@ export default function App() {
         next[newKey] = true;
         return next;
       });
+
+      // If boundaries changed, synchronize clip dialogue transcript text from full transcript
+      if (result.transcript && Array.isArray(result.transcript) && result.transcript.length > 0) {
+        const matching = result.transcript.filter(
+          l => (Number(l.start || 0) >= adjustedClip.start_time - 0.4) && (Number(l.end || 0) <= adjustedClip.end_time + 0.4)
+        );
+        if (matching.length > 0) {
+          adjustedClip.transcript = matching.map(l => (l.text || '').trim()).filter(Boolean).join(' ');
+        }
+      }
 
       setResult(prev => {
         if (!prev) return prev;
