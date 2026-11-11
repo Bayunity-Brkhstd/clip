@@ -178,7 +178,6 @@ Cheat Clip PRO uses Google's AI to find the best viral moments for free:
 
 - **[Bayunity-Brkhstd](https://github.com/Bayunity-Brkhstd)** — Creator & Lead Maintainer
 - **[Google Antigravity](https://deepmind.google/)** — AI Autonomous Engineering & Coding Partner (Google DeepMind)
-- **[Galih Juan Saputra](https://github.com/galihjuansaputra/cheat-clip-pro.git)** — Original Project Creator
 
 ---
 
