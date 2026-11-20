@@ -55,7 +55,6 @@ Musik-musik yang memompa dopamin, memecah kantuk jam 3 pagi, dan menjaga ritme k
 
 Pondasi pengetahuan terbuka tempat seluruh kendala teknis menemukan jawabannya:
 
-* **Galih Juan Saputra ([github.com/galihjuansaputra/cheat-clip-pro](https://github.com/galihjuansaputra/cheat-clip-pro.git))** — Kreator awal dan pemilik fondasi repositori orisinal Cheat Clip Pro. Apresiasi dan rasa hormat setinggi-tingginya atas inisiasi basis kode open-source yang menjadi pijakan fundamental bagi lahir dan berevolusinya Cheat Clip PRO.
 * **Google.com & YouTube.com** — Gerbang pencarian dokumentasi, tutorial teknis tersembunyi, dan sumber inspirasi konten kreator.
 * **GitHub.com** — Rumah bagi jutaan library open-source berlisensi MIT, komunitas global pengembang, dan infrastruktur versi kode.
 * **Stack Overflow** — Penyelamat abadi dari error runtime PyInstaller, syntax ganjil, dan keanehan Windows path subprocess.
